@@ -1,0 +1,454 @@
+package cn.lineai.ui;
+
+import android.content.Context;
+import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import cn.lineai.model.ChatUiState;
+import cn.lineai.model.ModelConfig;
+import cn.lineai.model.ModelProviderPreset;
+import cn.lineai.model.ModelProviderPresets;
+import cn.lineai.model.SheetOption;
+import cn.lineai.mvp.MainContract;
+import cn.lineai.ui.component.BottomSheetView;
+import cn.lineai.ui.component.ChatMessageListView;
+import cn.lineai.ui.component.ComposerView;
+import cn.lineai.ui.component.AboutScreenView;
+import cn.lineai.ui.component.AgentExtensionEditScreenView;
+import cn.lineai.ui.component.DataSettingsScreenView;
+import cn.lineai.ui.component.DebugSettingsScreenView;
+import cn.lineai.ui.component.DrawerView;
+import cn.lineai.ui.component.ExperimentalSettingsScreenView;
+import cn.lineai.ui.component.ExtensionDetailScreenView;
+import cn.lineai.ui.component.ExtensionsScreenView;
+import cn.lineai.ui.component.HeaderView;
+import cn.lineai.ui.component.InAppBrowserScreenView;
+import cn.lineai.ui.component.KeepAliveSettingsScreenView;
+import cn.lineai.ui.component.LLMSettingsScreenView;
+import cn.lineai.ui.component.LicensesScreenView;
+import cn.lineai.ui.component.MCPSettingsScreenView;
+import cn.lineai.ui.component.MemorySettingsScreenView;
+import cn.lineai.ui.component.McpExtensionEditScreenView;
+import cn.lineai.ui.component.ModelAddOptionsScreenView;
+import cn.lineai.ui.component.ModelAddScreenView;
+import cn.lineai.ui.component.ModelListScreenView;
+import cn.lineai.ui.component.OutputSettingsScreenView;
+import cn.lineai.ui.component.PluginPageScreenView;
+import cn.lineai.ui.component.SettingsScreenView;
+import cn.lineai.ui.component.ShellCommandScreenView;
+import cn.lineai.ui.component.SimpleSettingsScreenView;
+import cn.lineai.ui.component.StorageManagementScreenView;
+import cn.lineai.ui.component.ThemeSettingsScreenView;
+import cn.lineai.ui.component.TutorialScreenView;
+import cn.lineai.ui.theme.LineTheme;
+import java.util.List;
+
+public final class MainChatView extends FrameLayout implements MainContract.View {
+    private final MainContract.Presenter presenter;
+    private final HeaderView headerView;
+    private final ChatMessageListView messageListView;
+    private final ComposerView composerView;
+    private final DrawerView drawerView;
+    private final BottomSheetView bottomSheetView;
+    private final FrameLayout screenHost;
+
+    public MainChatView(Context context, MainContract.Presenter presenter) {
+        super(context);
+        this.presenter = presenter;
+        setBackgroundColor(LineTheme.BG);
+
+        LinearLayout content = new LinearLayout(context);
+        content.setOrientation(LinearLayout.VERTICAL);
+        addView(content, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+
+        headerView = new HeaderView(context);
+        headerView.setListener(new HeaderView.Listener() {
+            @Override
+            public void onMenuClick() {
+                MainChatView.this.presenter.onMenuClick();
+            }
+
+            @Override
+            public void onProjectClick() {
+                MainChatView.this.presenter.onProjectClick();
+            }
+
+            @Override
+            public void onPermissionClick() {
+                MainChatView.this.presenter.onPermissionClick();
+            }
+
+            @Override
+            public void onNewConversationClick() {
+                MainChatView.this.presenter.onNewConversation();
+            }
+
+            @Override
+            public void onMoreClick() {
+                MainChatView.this.presenter.onMoreClick();
+            }
+        });
+        content.addView(headerView, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
+        messageListView = new ChatMessageListView(context);
+        content.addView(messageListView, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+        ));
+
+        composerView = new ComposerView(context);
+        composerView.setListener(new ComposerView.Listener() {
+            @Override
+            public void onSend(String text) {
+                MainChatView.this.presenter.onSendMessage(text);
+            }
+
+            @Override
+            public void onStop() {
+                MainChatView.this.presenter.onStopGeneration();
+            }
+        });
+        content.addView(composerView, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
+        drawerView = new DrawerView(context);
+        drawerView.setListener(new DrawerView.Listener() {
+            @Override
+            public void onCloseDrawer() {
+            }
+
+            @Override
+            public void onNewConversation() {
+                MainChatView.this.presenter.onNewConversation();
+            }
+        });
+        addView(drawerView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+
+        bottomSheetView = new BottomSheetView(context);
+        bottomSheetView.setListener(new BottomSheetView.Listener() {
+            @Override
+            public void onSheetDismissed() {
+            }
+
+            @Override
+            public void onSheetOptionSelected(String id) {
+                MainChatView.this.presenter.onSheetOptionSelected(id);
+            }
+        });
+        addView(bottomSheetView, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+
+        screenHost = new FrameLayout(context);
+        screenHost.setVisibility(GONE);
+        addView(screenHost, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+    }
+
+    @Override
+    public void render(ChatUiState state) {
+        headerView.render(state);
+        messageListView.render(state);
+        composerView.render(state);
+    }
+
+    @Override
+    public void showDrawer() {
+        bottomSheetView.close();
+        drawerView.open();
+    }
+
+    @Override
+    public void showSheet(String title, List<SheetOption> options) {
+        drawerView.close();
+        bottomSheetView.show(title, options);
+    }
+
+    @Override
+    public void hideOverlays() {
+        drawerView.close();
+        bottomSheetView.close();
+    }
+
+    @Override
+    public void showScreen(String screenId) {
+        screenHost.removeAllViews();
+        screenHost.addView(buildScreen(screenId), new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+        screenHost.setVisibility(VISIBLE);
+        screenHost.bringToFront();
+    }
+
+    @Override
+    public void showChatScreen() {
+        screenHost.removeAllViews();
+        screenHost.setVisibility(GONE);
+    }
+
+    public boolean handleBackPressed() {
+        if (screenHost.getVisibility() == VISIBLE) {
+            presenter.onScreenBack();
+            return true;
+        }
+        if (bottomSheetView.getVisibility() == VISIBLE) {
+            bottomSheetView.close();
+            return true;
+        }
+        if (drawerView.getVisibility() == VISIBLE) {
+            drawerView.close();
+            return true;
+        }
+        return false;
+    }
+
+    private View buildScreen(String screenId) {
+        Context context = getContext();
+        if ("settings".equals(screenId)) {
+            return new SettingsScreenView(context, new SettingsScreenView.Listener() {
+                @Override
+                public void onBack() {
+                    presenter.onScreenBack();
+                }
+
+                @Override
+                public void onItem(String id) {
+                    presenter.onSettingsItemSelected(id);
+                }
+            });
+        }
+        if ("models".equals(screenId)) {
+            return new ModelListScreenView(context, presenter.getModels(), presenter.getSelectedModelId(), new ModelListScreenView.Listener() {
+                @Override
+                public void onBack() {
+                    presenter.onScreenBack();
+                }
+
+                @Override
+                public void onAddModel() {
+                    presenter.onSettingsItemSelected("modelAddOptions");
+                }
+
+                @Override
+                public void onSelectModel(String id) {
+                    presenter.onModelSelected(id);
+                }
+            });
+        }
+        if ("extensions".equals(screenId)) {
+            return new ExtensionsScreenView(context, new ExtensionsScreenView.Listener() {
+                @Override
+                public void onBack() {
+                    presenter.onScreenBack();
+                }
+
+                @Override
+                public void onOpen(String id) {
+                    presenter.onSettingsItemSelected("extension:" + id);
+                }
+            });
+        }
+        if ("llm".equals(screenId)) {
+            return new LLMSettingsScreenView(context, presenter::onScreenBack);
+        }
+        if ("mcp".equals(screenId)) {
+            return new MCPSettingsScreenView(context, presenter::onScreenBack);
+        }
+        if ("output".equals(screenId)) {
+            return new OutputSettingsScreenView(context, presenter::onScreenBack);
+        }
+        if ("theme".equals(screenId)) {
+            return new ThemeSettingsScreenView(context, presenter::onScreenBack);
+        }
+        if ("experimental".equals(screenId)) {
+            return new ExperimentalSettingsScreenView(context, presenter::onScreenBack);
+        }
+        if ("data".equals(screenId)) {
+            return new DataSettingsScreenView(context, presenter::onScreenBack);
+        }
+        if ("storage".equals(screenId)) {
+            return new StorageManagementScreenView(context, presenter::onScreenBack);
+        }
+        if ("memory".equals(screenId)) {
+            return new MemorySettingsScreenView(context, presenter::onScreenBack);
+        }
+        if ("keepAlive".equals(screenId)) {
+            return new KeepAliveSettingsScreenView(context, presenter::onScreenBack);
+        }
+        if ("about".equals(screenId)) {
+            return new AboutScreenView(context, new AboutScreenView.Listener() {
+                @Override
+                public void onBack() {
+                    presenter.onScreenBack();
+                }
+
+                @Override
+                public void onOpenLicenses() {
+                    presenter.onSettingsItemSelected("licenses");
+                }
+
+                @Override
+                public void onOpenDebug() {
+                    presenter.onSettingsItemSelected("debug");
+                }
+            });
+        }
+        if ("licenses".equals(screenId)) {
+            return new LicensesScreenView(context, presenter::onScreenBack);
+        }
+        if ("debug".equals(screenId)) {
+            return new DebugSettingsScreenView(context, presenter::onScreenBack);
+        }
+        if ("tutorial".equals(screenId)) {
+            return new TutorialScreenView(context, presenter::onScreenBack);
+        }
+        if ("pluginPage".equals(screenId)) {
+            return new PluginPageScreenView(context, "插件页面", presenter::onScreenBack);
+        }
+        if ("browser".equals(screenId)) {
+            return new InAppBrowserScreenView(context, "https://example.com", presenter::onScreenBack);
+        }
+        if ("agentEdit".equals(screenId)) {
+            return new AgentExtensionEditScreenView(context, presenter::onScreenBack);
+        }
+        if ("mcpEdit".equals(screenId)) {
+            return new McpExtensionEditScreenView(context, presenter::onScreenBack);
+        }
+        if (screenId != null && screenId.startsWith("extension:")) {
+            String kind = screenId.substring("extension:".length());
+            return new ExtensionDetailScreenView(context, kind, new ExtensionDetailScreenView.Listener() {
+                @Override
+                public void onBack() {
+                    presenter.onScreenBack();
+                }
+
+                @Override
+                public void onAddAgent() {
+                    presenter.onSettingsItemSelected("agentEdit");
+                }
+
+                @Override
+                public void onAddMcp() {
+                    presenter.onSettingsItemSelected("mcpEdit");
+                }
+            });
+        }
+        if ("shellCommand".equals(screenId)) {
+            return new ShellCommandScreenView(context, "cd /home/LangLang/AndroidStudioProjects/LineCode && ./gradlew :app:assembleDebug", presenter::onScreenBack);
+        }
+        if ("modelAddOptions".equals(screenId)) {
+            return new ModelAddOptionsScreenView(context, new ModelAddOptionsScreenView.Listener() {
+                @Override
+                public void onBack() {
+                    presenter.onScreenBack();
+                }
+
+                @Override
+                public void onCustom() {
+                    presenter.onSettingsItemSelected("modelAdd");
+                }
+
+                @Override
+                public void onLocal() {
+                    presenter.onSettingsItemSelected("modelAdd:local");
+                }
+
+                @Override
+                public void onProvider(String id) {
+                    presenter.onSettingsItemSelected("modelAdd:preset:" + id);
+                }
+            });
+        }
+        if ("modelAdd".equals(screenId)) {
+            return modelAddScreen(context, null, false);
+        }
+        if ("modelAdd:local".equals(screenId)) {
+            return modelAddScreen(context, null, true);
+        }
+        if (screenId != null && screenId.startsWith("modelAdd:preset:")) {
+            return modelAddScreen(context, ModelProviderPresets.find(screenId.substring("modelAdd:preset:".length())), false);
+        }
+        return simpleScreen(screenId);
+    }
+
+    private View modelAddScreen(Context context, ModelProviderPreset preset, boolean local) {
+        return new ModelAddScreenView(context, preset, local, new ModelAddScreenView.Listener() {
+            @Override
+            public void onBack() {
+                presenter.onScreenBack();
+            }
+
+            @Override
+            public void onSave(ModelConfig model) {
+                presenter.onModelSaved(model);
+            }
+        });
+    }
+
+    private String providerLabel(String id) {
+        if ("deepseek".equals(id)) return "DeepSeek";
+        if ("glm".equals(id)) return "GLM";
+        if ("mimo".equals(id)) return "Mimo";
+        if ("mimo-token-plan".equals(id)) return "Mimo Token 计划";
+        if ("kimi".equals(id)) return "Kimi";
+        if ("qwen".equals(id)) return "Qwen";
+        if ("openai".equals(id)) return "OpenAI";
+        if ("codex".equals(id)) return "Codex";
+        if ("claude".equals(id)) return "Claude";
+        if ("gemini".equals(id)) return "Gemini";
+        if ("openrouter".equals(id)) return "OpenRouter";
+        return null;
+    }
+
+    private View simpleScreen(String screenId) {
+        String title = titleFor(screenId);
+        String subtitle = subtitleFor(screenId);
+        String[] rows = rowsFor(screenId);
+        return new SimpleSettingsScreenView(getContext(), title, subtitle, rows, presenter::onScreenBack);
+    }
+
+    private String titleFor(String screenId) {
+        if ("llm".equals(screenId)) return "AI 行为";
+        if ("mcp".equals(screenId)) return "工具与执行";
+        if ("theme".equals(screenId)) return "主题与外观";
+        if ("output".equals(screenId)) return "输出与浏览";
+        if ("experimental".equals(screenId)) return "实验性渲染";
+        if ("storage".equals(screenId)) return "存储管理";
+        if ("memory".equals(screenId)) return "记忆";
+        if ("data".equals(screenId)) return "数据与更新";
+        if ("keepAlive".equals(screenId)) return "后台保活";
+        if ("about".equals(screenId)) return "关于 LineCode";
+        if ("modelAddOptions".equals(screenId)) return "添加模型";
+        if ("licenses".equals(screenId)) return "开源许可";
+        if ("debug".equals(screenId)) return "调试设置";
+        if ("tutorial".equals(screenId)) return "教程";
+        if (screenId != null && screenId.startsWith("extension:")) return "扩展详情";
+        return "LineCode";
+    }
+
+    private String subtitleFor(String screenId) {
+        if ("about".equals(screenId)) return "LineCode Java 原生 View 版本。当前页面用于对齐 LineAI 的 Android UI 结构。";
+        if ("modelAddOptions".equals(screenId)) return "选择添加模型的方式，后续会接入真实表单和本地模型选择。";
+        if (screenId != null && screenId.startsWith("extension:")) return "扩展详情页骨架，后续会接入 Agent、MCP、Skills 和 .lip 包编辑。";
+        return "该页面已经接入原生导航与统一样式，后续继续补真实设置项和业务逻辑。";
+    }
+
+    private String[] rowsFor(String screenId) {
+        if ("llm".equals(screenId)) return new String[] {"交流语气", "思考强度", "保留 reasoning", "数学公式渲染"};
+        if ("mcp".equals(screenId)) return new String[] {"MCP 执行模式", "SSH 工具", "网页搜索", "工具确认策略"};
+        if ("theme".equals(screenId)) return new String[] {"深色主题", "浅色主题", "咖啡主题", "高对比模式"};
+        if ("output".equals(screenId)) return new String[] {"回复布局", "代码自动换行", "网页打开方式", "长消息虚拟化"};
+        if ("experimental".equals(screenId)) return new String[] {"实验性键盘避让", "实验性消息渲染", "调试日志"};
+        if ("storage".equals(screenId)) return new String[] {"聊天记录", "配置文件", "Diff 缓存", "工作区占用"};
+        if ("memory".equals(screenId)) return new String[] {"长期记忆", "项目记忆", "短期记忆", "检索索引"};
+        if ("data".equals(screenId)) return new String[] {"热更新", "完整导出", ".linecode 导入", "数据归档"};
+        if ("keepAlive".equals(screenId)) return new String[] {"Wake Lock", "前台服务", "模拟音乐播放", "电池白名单"};
+        if ("about".equals(screenId)) return new String[] {"版本 1.0", "开源许可", "诊断信息", "调试设置"};
+        if ("modelAddOptions".equals(screenId)) return new String[] {"自定义 API 模型", "本地 GGUF 模型", "OpenAI 兼容供应商", "Codex 预设"};
+        if ("tutorial".equals(screenId)) return new String[] {"初学者教程", "专业模式教程", "工具调用说明"};
+        if (screenId != null && screenId.startsWith("extension:")) return new String[] {"启用状态", "权限范围", "配置项", "删除扩展"};
+        return new String[] {"界面骨架", "业务逻辑待接入"};
+    }
+}
