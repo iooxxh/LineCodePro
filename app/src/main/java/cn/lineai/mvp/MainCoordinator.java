@@ -31,6 +31,7 @@ import cn.lineai.data.repository.MessageRecord;
 import cn.lineai.data.repository.OutputSettingsRepository;
 import cn.lineai.data.repository.ProjectRecord;
 import cn.lineai.data.repository.ProjectRepository;
+import cn.lineai.data.repository.PromptTemplateRepository;
 import cn.lineai.data.repository.SshFileTreeRepository;
 import cn.lineai.data.repository.ThemeSettingsRepository;
 import cn.lineai.data.repository.ToolSettingsRepository;
@@ -52,6 +53,7 @@ import cn.lineai.model.ModelContextParser;
 import cn.lineai.model.ModelProtocolType;
 import cn.lineai.model.ModelRepository;
 import cn.lineai.model.OutputSettings;
+import cn.lineai.model.PromptTemplateItem;
 import cn.lineai.model.SheetOption;
 import cn.lineai.model.SkillRecord;
 import cn.lineai.model.SshConfig;
@@ -111,6 +113,7 @@ public final class MainCoordinator implements MainUiController {
     private final ChatModeRepository chatModeRepository;
     private final OutputSettingsRepository outputSettingsRepository;
     private final ThemeSettingsRepository themeSettingsRepository;
+    private final PromptTemplateRepository promptTemplateRepository;
     private final ConversationRepository conversationRepository;
     private final ProjectRepository projectRepository;
     private final LearningContextRepository learningContextRepository;
@@ -621,6 +624,7 @@ public final class MainCoordinator implements MainUiController {
         chatModeRepository = dependencies.chatModeRepository;
         outputSettingsRepository = dependencies.outputSettingsRepository;
         themeSettingsRepository = dependencies.themeSettingsRepository;
+        promptTemplateRepository = dependencies.promptTemplateRepository;
         conversationRepository = dependencies.conversationRepository;
         projectRepository = dependencies.projectRepository;
         learningContextRepository = dependencies.learningContextRepository;
@@ -1613,6 +1617,21 @@ public final class MainCoordinator implements MainUiController {
     @Override
     public void onAiLearningModeChanged(boolean enabled) {
         aiBehaviorSettingsRepository.setLearningModeEnabled(enabled);
+    }
+
+    @Override
+    public List<PromptTemplateItem> getPromptTemplates() {
+        return promptTemplateRepository.getTemplates();
+    }
+
+    @Override
+    public void onPromptTemplateSaved(String id, String value) {
+        promptTemplateRepository.saveTemplate(id, value);
+    }
+
+    @Override
+    public void onPromptTemplateReset(String id) {
+        promptTemplateRepository.resetTemplate(id);
     }
 
     @Override
@@ -2932,7 +2951,7 @@ public final class MainCoordinator implements MainUiController {
         String systemPrompt = systemPromptProvider.build(
                 promptHomePath,
                 aiSettings.getToneMode(),
-                ChatMode.promptContext(activeChatMode),
+                chatModePromptContext(activeChatMode),
                 systemContext,
                 buildToolPrompt(selectedModel, usedToolCallCount)
         );
@@ -2947,6 +2966,17 @@ public final class MainCoordinator implements MainUiController {
             modelMessages.add(toModelMessage(message, includeReasoning));
         }
         return modelMessages;
+    }
+
+    private String chatModePromptContext(String mode) {
+        String normalized = ChatMode.normalize(mode);
+        if (ChatMode.CHAT.equals(normalized)) {
+            return promptTemplateRepository.getTemplateText(PromptTemplateRepository.ID_CHAT_MODE_CHAT);
+        }
+        if (ChatMode.PLAN.equals(normalized)) {
+            return promptTemplateRepository.getTemplateText(PromptTemplateRepository.ID_CHAT_MODE_PLAN);
+        }
+        return promptTemplateRepository.getTemplateText(PromptTemplateRepository.ID_CHAT_MODE_AGENT);
     }
 
     private ModelMessage toModelMessage(ChatMessage message, boolean includeReasoning) {

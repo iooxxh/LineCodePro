@@ -15,6 +15,7 @@ import cn.lineai.data.repository.LearningContextRepository;
 import cn.lineai.data.repository.MemoryExtractionService;
 import cn.lineai.data.repository.OutputSettingsRepository;
 import cn.lineai.data.repository.ProjectRepository;
+import cn.lineai.data.repository.PromptTemplateRepository;
 import cn.lineai.data.repository.SshFileTreeRepository;
 import cn.lineai.data.repository.ThemeSettingsRepository;
 import cn.lineai.data.repository.ToolSettingsRepository;
@@ -32,6 +33,7 @@ public final class MainDependencies {
     final ChatModeRepository chatModeRepository;
     final OutputSettingsRepository outputSettingsRepository;
     final ThemeSettingsRepository themeSettingsRepository;
+    final PromptTemplateRepository promptTemplateRepository;
     final ConversationRepository conversationRepository;
     final ProjectRepository projectRepository;
     final LearningContextRepository learningContextRepository;
@@ -60,6 +62,7 @@ public final class MainDependencies {
         chatModeRepository = new ChatModeRepository(context);
         outputSettingsRepository = new OutputSettingsRepository(context);
         themeSettingsRepository = new ThemeSettingsRepository(context);
+        promptTemplateRepository = new PromptTemplateRepository(context);
         themeSettingsRepository.applyCurrentTheme();
         conversationRepository = new ConversationRepository(context);
         projectRepository = new ProjectRepository(context);
@@ -77,7 +80,7 @@ public final class MainDependencies {
         toolRegistry = new ToolRegistry(context);
         toolExecutor = new ToolExecutor(toolRegistry, toolSettingsRepository, diffRepository);
         toolExecutionCoordinator = new ToolExecutionCoordinator();
-        systemPromptProvider = new SystemPromptProvider(context);
+        systemPromptProvider = new SystemPromptProvider(context, promptTemplateRepository);
         storagePermissionManager = new StoragePermissionManager(context);
         safPathResolver = new SafPathResolver();
         mainThreadDispatcher = new MainThreadDispatcher();

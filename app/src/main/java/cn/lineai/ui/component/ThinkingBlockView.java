@@ -5,6 +5,7 @@ import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewParent;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -58,18 +59,6 @@ public final class ThinkingBlockView extends LinearLayout {
         contentScrollView.setFillViewport(false);
         contentScrollView.setOverScrollMode(OVER_SCROLL_IF_CONTENT_SCROLLS);
         contentScrollView.setVerticalScrollBarEnabled(true);
-        contentScrollView.setOnTouchListener((view, event) -> {
-            int action = event.getActionMasked();
-            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
-                view.getParent().requestDisallowInterceptTouchEvent(true);
-            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                view.getParent().requestDisallowInterceptTouchEvent(false);
-                if (action == MotionEvent.ACTION_UP) {
-                    view.performClick();
-                }
-            }
-            return false;
-        });
 
         contentView = LineTheme.text(context, "", LineTheme.FONT_XS, LineTheme.TEXT_TERTIARY, Typeface.NORMAL);
         contentView.setLineSpacing(LineTheme.dp(context, 4), 1f);
@@ -101,9 +90,26 @@ public final class ThinkingBlockView extends LinearLayout {
 
     private static final class MaxHeightScrollView extends ScrollView {
         private int maxHeightPx;
+        private float lastTouchY;
 
         MaxHeightScrollView(Context context) {
             super(context);
+        }
+
+        @Override
+        public boolean dispatchTouchEvent(MotionEvent event) {
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                lastTouchY = event.getY();
+                requestParentDisallowIntercept(canScrollContent());
+            } else if (action == MotionEvent.ACTION_MOVE) {
+                float nextY = event.getY();
+                requestParentDisallowIntercept(shouldHandleDrag(nextY - lastTouchY));
+                lastTouchY = nextY;
+            } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                requestParentDisallowIntercept(false);
+            }
+            return super.dispatchTouchEvent(event);
         }
 
         @Override
@@ -125,6 +131,34 @@ public final class ThinkingBlockView extends LinearLayout {
                 heightMeasureSpec = MeasureSpec.makeMeasureSpec(limitedSize, MeasureSpec.AT_MOST);
             }
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+        }
+
+        private boolean shouldHandleDrag(float deltaY) {
+            if (!canScrollContent()) {
+                return false;
+            }
+            if (deltaY > 0f) {
+                return canScrollVertically(-1);
+            }
+            if (deltaY < 0f) {
+                return canScrollVertically(1);
+            }
+            return true;
+        }
+
+        private boolean canScrollContent() {
+            if (getChildCount() == 0) {
+                return false;
+            }
+            int viewportHeight = getHeight() - getPaddingTop() - getPaddingBottom();
+            return viewportHeight > 0 && getChildAt(0).getHeight() > viewportHeight;
+        }
+
+        private void requestParentDisallowIntercept(boolean disallowIntercept) {
+            ViewParent parent = getParent();
+            if (parent != null) {
+                parent.requestDisallowInterceptTouchEvent(disallowIntercept);
+            }
         }
     }
 }

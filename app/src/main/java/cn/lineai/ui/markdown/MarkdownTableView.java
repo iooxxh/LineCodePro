@@ -1,7 +1,9 @@
 package cn.lineai.ui.markdown;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.widget.HorizontalScrollView;
@@ -27,16 +29,20 @@ public final class MarkdownTableView extends HorizontalScrollView {
         this.context = context;
         this.inlineRenderer = inlineRenderer;
         this.linkHandler = linkHandler;
-        setFillViewport(false);
+        setFillViewport(true);
         setHorizontalScrollBarEnabled(true);
-        setClipToPadding(false);
-        setBackground(LineTheme.roundedStroke(context, LineTheme.CODE_BG, 12, LineTheme.CODE_BORDER));
-        int inset = LineTheme.dp(context, 1);
-        setPadding(inset, inset, inset, inset);
+        setHorizontalFadingEdgeEnabled(false);
+        setFadingEdgeLength(0);
+        setOverScrollMode(OVER_SCROLL_NEVER);
+        setClipToPadding(true);
+        setBackground(LineTheme.rounded(context, Color.TRANSPARENT, 12));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            setClipToOutline(true);
+        }
 
         tableLayout = new TableLayout(context);
         tableLayout.setShrinkAllColumns(false);
-        tableLayout.setStretchAllColumns(false);
+        tableLayout.setStretchAllColumns(true);
         addView(tableLayout, new LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
         render(tableBlock);
     }
@@ -66,6 +72,7 @@ public final class MarkdownTableView extends HorizontalScrollView {
     private void addRow(Node rowNode, boolean header) {
         android.widget.TableRow row = new android.widget.TableRow(context);
         row.setGravity(Gravity.CENTER_VERTICAL);
+        row.setBaselineAligned(false);
         tableLayout.addView(row, new TableLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
 
         Node cellNode = rowNode.getFirstChild();
@@ -73,7 +80,7 @@ public final class MarkdownTableView extends HorizontalScrollView {
             if (cellNode instanceof TableCell) {
                 row.addView(createCell((TableCell) cellNode, header), new android.widget.TableRow.LayoutParams(
                         LayoutParams.WRAP_CONTENT,
-                        LayoutParams.WRAP_CONTENT
+                        LayoutParams.MATCH_PARENT
                 ));
             }
             cellNode = cellNode.getNext();
@@ -88,6 +95,7 @@ public final class MarkdownTableView extends HorizontalScrollView {
         cellView.setOrientation(LinearLayout.VERTICAL);
         cellView.setGravity(Gravity.CENTER_VERTICAL);
         cellView.setMinimumWidth(LineTheme.dp(context, 84));
+        cellView.setMinimumHeight(LineTheme.dp(context, 38));
         cellView.setBackground(LineTheme.roundedStroke(context, cellBackground(header), 0, LineTheme.BORDER_LIGHT));
         LineTheme.padding(cellView, LineTheme.MD, LineTheme.SM, LineTheme.MD, LineTheme.SM);
 

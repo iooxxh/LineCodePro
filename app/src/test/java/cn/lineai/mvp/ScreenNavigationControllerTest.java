@@ -29,6 +29,17 @@ public final class ScreenNavigationControllerTest {
         Assert.assertFalse(host.chatShown);
     }
 
+    @Test
+    public void promptTemplatesBackReturnsToAiBehavior() {
+        ScreenNavigationController controller = new ScreenNavigationController();
+        RecordingHost host = new RecordingHost();
+
+        controller.backFrom("promptTemplates", host);
+
+        Assert.assertEquals("llm", host.lastScreenId);
+        Assert.assertFalse(host.chatShown);
+    }
+
     private static final class RecordingHost implements ScreenNavigationController.Host {
         private String lastScreenId = "";
         private boolean chatShown;

@@ -13,15 +13,13 @@ import cn.lineai.ai.message.ToolModelMessage;
 import cn.lineai.ai.message.UserModelMessage;
 import cn.lineai.ai.protocol.CodexResponsesProtocol;
 import cn.lineai.ai.protocol.OpenAiResponsesCompactionProtocol;
+import cn.lineai.data.repository.PromptTemplateRepository;
 import cn.lineai.model.AiBehaviorSettings;
 import cn.lineai.model.ChatMessage;
 import cn.lineai.model.ModelConfig;
 import cn.lineai.model.ModelProtocolType;
 import cn.lineai.tool.BaseTool;
 import cn.lineai.tool.ToolCall;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -30,30 +28,33 @@ import java.util.regex.Pattern;
 public final class ContextCompactionService {
     public static final double COMPACT_TRIGGER_RATIO = 0.8d;
 
-    private static final String TEMPLATE_PATH = "prompts/context-compaction-template.txt";
     private static final Pattern ANALYSIS_PATTERN = Pattern.compile("<analysis>[\\s\\S]*?</analysis>", Pattern.CASE_INSENSITIVE);
     private static final Pattern SUMMARY_PATTERN = Pattern.compile("<summary>([\\s\\S]*?)</summary>", Pattern.CASE_INSENSITIVE);
 
-    private final Context context;
     private final ModelClient modelClient;
     private final OpenAiResponsesCompactionProtocol responsesCompactionProtocol;
     private final CodexResponsesProtocol responsesSummaryProtocol;
-    private String cachedPrompt;
+    private final PromptTemplateRepository promptTemplateRepository;
 
     public ContextCompactionService(Context context) {
-        this(context, new ModelClient(), new OpenAiResponsesCompactionProtocol(), new CodexResponsesProtocol());
+        this(context, new ModelClient(), new OpenAiResponsesCompactionProtocol(), new CodexResponsesProtocol(),
+                new PromptTemplateRepository(context));
     }
 
     ContextCompactionService(
             Context context,
             ModelClient modelClient,
             OpenAiResponsesCompactionProtocol responsesCompactionProtocol,
-            CodexResponsesProtocol responsesSummaryProtocol
+            CodexResponsesProtocol responsesSummaryProtocol,
+            PromptTemplateRepository promptTemplateRepository
     ) {
-        this.context = context.getApplicationContext();
+        Context appContext = context.getApplicationContext();
         this.modelClient = modelClient;
         this.responsesCompactionProtocol = responsesCompactionProtocol;
         this.responsesSummaryProtocol = responsesSummaryProtocol;
+        this.promptTemplateRepository = promptTemplateRepository == null
+                ? new PromptTemplateRepository(appContext)
+                : promptTemplateRepository;
     }
 
     public ContextCompactionResult compact(
@@ -241,25 +242,6 @@ public final class ContextCompactionService {
     }
 
     private String prompt() {
-        if (cachedPrompt == null) {
-            cachedPrompt = readAsset(TEMPLATE_PATH);
-        }
-        return cachedPrompt;
-    }
-
-    private String readAsset(String path) {
-        try {
-            InputStream input = context.getAssets().open(path);
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            byte[] buffer = new byte[4096];
-            int read;
-            while ((read = input.read(buffer)) != -1) {
-                output.write(buffer, 0, read);
-            }
-            input.close();
-            return output.toString(StandardCharsets.UTF_8.name());
-        } catch (Exception e) {
-            throw new IllegalStateException("无法读取上下文压缩提示词模板: " + path, e);
-        }
+        return promptTemplateRepository.getTemplateText(PromptTemplateRepository.ID_CONTEXT_COMPACTION);
     }
 }

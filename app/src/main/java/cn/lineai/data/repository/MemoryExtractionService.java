@@ -9,9 +9,6 @@ import cn.lineai.ai.message.UserModelMessage;
 import cn.lineai.ai.prompt.StringTemplate;
 import cn.lineai.model.MemoryOverviewState;
 import cn.lineai.model.ModelConfig;
-import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -21,8 +18,6 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 public final class MemoryExtractionService {
-    private static final String TEMPLATE_PATH = "prompts/memory-extraction-template.txt";
-    private static final String SKILL_TEMPLATE_PATH = "prompts/skill-extraction-template.txt";
     private static final int MAX_TRANSCRIPT_CHARS = 6000;
     private static final int MAX_MEMORY_CHARS = 320;
     private static final int MAX_MEMORIES = 5;
@@ -32,14 +27,14 @@ public final class MemoryExtractionService {
     private final Context context;
     private final LearningContextRepository repository;
     private final ExtensionRepository extensionRepository;
+    private final PromptTemplateRepository promptTemplateRepository;
     private final ModelClient modelClient = new ModelClient();
-    private StringTemplate cachedTemplate;
-    private StringTemplate cachedSkillTemplate;
 
     public MemoryExtractionService(Context context, LearningContextRepository repository) {
         this.context = context.getApplicationContext();
         this.repository = repository;
         this.extensionRepository = new ExtensionRepository(this.context);
+        this.promptTemplateRepository = new PromptTemplateRepository(this.context);
     }
 
     public void extractAndStore(ModelConfig selectedModel, String projectId, String userInput, String transcript) {
@@ -394,17 +389,11 @@ public final class MemoryExtractionService {
     }
 
     private StringTemplate template() {
-        if (cachedTemplate == null) {
-            cachedTemplate = new StringTemplate(readAsset(TEMPLATE_PATH));
-        }
-        return cachedTemplate;
+        return new StringTemplate(promptTemplateRepository.getTemplateText(PromptTemplateRepository.ID_MEMORY_EXTRACTION));
     }
 
     private StringTemplate skillTemplate() {
-        if (cachedSkillTemplate == null) {
-            cachedSkillTemplate = new StringTemplate(readAsset(SKILL_TEMPLATE_PATH));
-        }
-        return cachedSkillTemplate;
+        return new StringTemplate(promptTemplateRepository.getTemplateText(PromptTemplateRepository.ID_SKILL_EXTRACTION));
     }
 
     private String sanitizeSkillName(String name) {
@@ -429,22 +418,6 @@ public final class MemoryExtractionService {
             clean = clean.substring(0, clean.length() - 1);
         }
         return clean;
-    }
-
-    private String readAsset(String path) {
-        try {
-            InputStream input = context.getAssets().open(path);
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            byte[] buffer = new byte[4096];
-            int read;
-            while ((read = input.read(buffer)) != -1) {
-                output.write(buffer, 0, read);
-            }
-            input.close();
-            return output.toString(StandardCharsets.UTF_8.name());
-        } catch (Exception e) {
-            throw new IllegalStateException("无法读取记忆提取提示词模板: " + path, e);
-        }
     }
 
     private String safe(String value) {

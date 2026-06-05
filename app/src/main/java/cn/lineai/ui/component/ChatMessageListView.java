@@ -552,6 +552,14 @@ public final class ChatMessageListView extends FrameLayout {
         }
 
         @Override
+        public void requestDisallowInterceptTouchEvent(boolean disallowIntercept) {
+            if (disallowIntercept) {
+                followTailEnabled = false;
+            }
+            super.requestDisallowInterceptTouchEvent(disallowIntercept);
+        }
+
+        @Override
         public boolean onTouchEvent(MotionEvent event) {
             int action = event.getActionMasked();
             if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {

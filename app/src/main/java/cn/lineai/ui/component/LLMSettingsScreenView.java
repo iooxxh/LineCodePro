@@ -21,6 +21,8 @@ public final class LLMSettingsScreenView extends ScreenScaffoldView {
         void onPreserveReasoningChanged(boolean enabled);
 
         void onLearningModeChanged(boolean enabled);
+
+        void onOpenPromptTemplates();
     }
 
     private final List<ReasoningRow> reasoningRows = new ArrayList<>();
@@ -56,6 +58,17 @@ public final class LLMSettingsScreenView extends ScreenScaffoldView {
         addToneRow(tone, listener, AiBehaviorSettings.TONE_CODING, "编程模式", "严谨专业，代码优先，不使用 emoji", IconButtonView.ZAP, value.getToneMode(), true);
         addToneRow(tone, listener, AiBehaviorSettings.TONE_CHAT, "聊天模式", "亲切温柔，像朋友聊天，可以使用 emoji", IconButtonView.SMILE, value.getToneMode(), false);
         content.addView(tone, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+
+        SettingsSectionView prompts = new SettingsSectionView(context, "提示词");
+        prompts.addRow(new OptionRowView(
+                context,
+                IconButtonView.FILE_PEN_LINE,
+                "自定义提示词",
+                "编辑 system、语气模式、会话模式、学习记忆和上下文压缩模板",
+                false,
+                listener::onOpenPromptTemplates
+        ), false);
+        content.addView(prompts, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
         SettingsSectionView thinking = new SettingsSectionView(context, "思考过程");
         thinking.addRow(new SwitchRowView(

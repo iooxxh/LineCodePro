@@ -125,6 +125,9 @@ public final class ScreenNavigationController {
         if ("sshSettings".equals(safeScreenId) || "termuxIntegration".equals(safeScreenId)) {
             return "mcp";
         }
+        if ("promptTemplates".equals(safeScreenId)) {
+            return "llm";
+        }
         if ("licenses".equals(safeScreenId)) {
             return "about";
         }

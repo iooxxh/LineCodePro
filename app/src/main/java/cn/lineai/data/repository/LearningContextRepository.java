@@ -9,10 +9,7 @@ import cn.lineai.data.db.LineCodeDatabase;
 import cn.lineai.model.ChatMessage;
 import cn.lineai.model.MemoryOverviewState;
 import cn.lineai.workspace.WorkspacePaths;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -22,7 +19,6 @@ import java.util.Locale;
 import java.util.UUID;
 
 public final class LearningContextRepository {
-    private static final String TEMPLATE_PATH = "prompts/learning-context-template.txt";
     private static final int SCAN_LIMIT = 120;
     private static final int OVERVIEW_LIMIT = 200;
     private static final double RECENCY_WEIGHT = 0.15;
@@ -37,12 +33,13 @@ public final class LearningContextRepository {
     private final Context context;
     private final LineCodeDatabase database;
     private final WorkspacePaths workspacePaths;
-    private StringTemplate cachedTemplate;
+    private final PromptTemplateRepository promptTemplateRepository;
 
     public LearningContextRepository(Context context) {
         this.context = context.getApplicationContext();
         this.database = LineCodeDatabase.getInstance(this.context);
         this.workspacePaths = new WorkspacePaths(this.context);
+        this.promptTemplateRepository = new PromptTemplateRepository(this.context);
     }
 
     public synchronized String buildLearningContext(String projectId, String userInput, String excludeConversationId) {
@@ -766,26 +763,7 @@ public final class LearningContextRepository {
     }
 
     private StringTemplate template() {
-        if (cachedTemplate == null) {
-            cachedTemplate = new StringTemplate(readAsset(TEMPLATE_PATH));
-        }
-        return cachedTemplate;
-    }
-
-    private String readAsset(String path) {
-        try {
-            InputStream input = context.getAssets().open(path);
-            ByteArrayOutputStream output = new ByteArrayOutputStream();
-            byte[] buffer = new byte[4096];
-            int read;
-            while ((read = input.read(buffer)) != -1) {
-                output.write(buffer, 0, read);
-            }
-            input.close();
-            return output.toString(StandardCharsets.UTF_8.name());
-        } catch (Exception e) {
-            throw new IllegalStateException("无法读取学习模式提示词模板: " + path, e);
-        }
+        return new StringTemplate(promptTemplateRepository.getTemplateText(PromptTemplateRepository.ID_LEARNING_CONTEXT));
     }
 
     private static final class Candidate {

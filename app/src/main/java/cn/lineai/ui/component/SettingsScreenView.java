@@ -37,7 +37,7 @@ public final class SettingsScreenView extends LinearLayout {
 
         addSection(content, "AI 与模型", new RowSpec[] {
                 new RowSpec("models", "模型管理", "供应商、密钥、模型 ID 和默认模型", IconButtonView.BOX),
-                new RowSpec("llm", "AI 行为", "思考强度、交流语气和 reasoning 保留", IconButtonView.BRAIN),
+                new RowSpec("llm", "AI 行为", "思考强度、交流语气、提示词和 reasoning 保留", IconButtonView.BRAIN),
         });
         addSection(content, "工具与执行", new RowSpec[] {
                 new RowSpec("mcp", "工具与执行", "MCP 工具开关、SSH 执行和网页搜索", IconButtonView.MCP),

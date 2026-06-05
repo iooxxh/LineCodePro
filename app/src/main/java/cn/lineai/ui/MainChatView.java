@@ -59,6 +59,7 @@ import cn.lineai.ui.component.ModelAddScreenView;
 import cn.lineai.ui.component.ModelListScreenView;
 import cn.lineai.ui.component.OutputSettingsScreenView;
 import cn.lineai.ui.component.PluginPageScreenView;
+import cn.lineai.ui.component.PromptTemplatesScreenView;
 import cn.lineai.ui.component.SettingsScreenView;
 import cn.lineai.ui.component.ShellCommandScreenView;
 import cn.lineai.ui.component.SimpleSettingsScreenView;
@@ -795,6 +796,29 @@ public final class MainChatView extends FrameLayout implements MainContract.View
                 public void onLearningModeChanged(boolean enabled) {
                     presenter.onAiLearningModeChanged(enabled);
                 }
+
+                @Override
+                public void onOpenPromptTemplates() {
+                    presenter.onSettingsItemSelected("promptTemplates");
+                }
+            });
+        }
+        if ("promptTemplates".equals(screenId)) {
+            return new PromptTemplatesScreenView(context, presenter.getPromptTemplates(), new PromptTemplatesScreenView.Listener() {
+                @Override
+                public void onBack() {
+                    handleScreenBack();
+                }
+
+                @Override
+                public void onPromptTemplateSaved(String id, String value) {
+                    presenter.onPromptTemplateSaved(id, value);
+                }
+
+                @Override
+                public void onPromptTemplateReset(String id) {
+                    presenter.onPromptTemplateReset(id);
+                }
             });
         }
         if ("mcp".equals(screenId)) {
@@ -1181,6 +1205,7 @@ public final class MainChatView extends FrameLayout implements MainContract.View
 
     private String titleFor(String screenId) {
         if ("llm".equals(screenId)) return "AI 行为";
+        if ("promptTemplates".equals(screenId)) return "自定义提示词";
         if ("mcp".equals(screenId)) return "工具与执行";
         if ("theme".equals(screenId)) return "主题与外观";
         if ("output".equals(screenId)) return "输出与浏览";
@@ -1207,7 +1232,7 @@ public final class MainChatView extends FrameLayout implements MainContract.View
     }
 
     private String[] rowsFor(String screenId) {
-        if ("llm".equals(screenId)) return new String[] {"交流语气", "思考强度", "保留 reasoning", "数学公式渲染"};
+        if ("llm".equals(screenId)) return new String[] {"交流语气", "思考强度", "保留 reasoning", "自定义提示词"};
         if ("mcp".equals(screenId)) return new String[] {"MCP 执行模式", "SSH 工具", "网页搜索", "工具确认策略"};
         if ("theme".equals(screenId)) return new String[] {"深色主题", "浅色主题", "咖啡主题", "高对比模式"};
         if ("output".equals(screenId)) return new String[] {"代码自动换行", "网页打开方式", "内置浏览器 JavaScript", "Markdown 预览"};

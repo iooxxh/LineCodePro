@@ -4,8 +4,10 @@ import cn.lineai.model.AiBehaviorSettings;
 import cn.lineai.model.McpSettingsState;
 import cn.lineai.model.MemoryOverviewState;
 import cn.lineai.model.OutputSettings;
+import cn.lineai.model.PromptTemplateItem;
 import cn.lineai.model.ThemeSettingsState;
 import cn.lineai.model.WebSearchConfig;
+import java.util.List;
 import java.util.Map;
 
 public interface SettingsController {
@@ -26,6 +28,12 @@ public interface SettingsController {
     void onAiPreserveReasoningChanged(boolean enabled);
 
     void onAiLearningModeChanged(boolean enabled);
+
+    List<PromptTemplateItem> getPromptTemplates();
+
+    void onPromptTemplateSaved(String id, String value);
+
+    void onPromptTemplateReset(String id);
 
     MemoryOverviewState getMemoryOverview();
 
