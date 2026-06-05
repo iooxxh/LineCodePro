@@ -133,10 +133,10 @@ public final class ToolSettingsRepository {
     }
 
     public synchronized boolean needsConfirmation(String toolName) {
-        if (!PERMISSION_CONFIRM.equals(getPermissionMode())) {
-            return false;
+        if ("file_delete".equals(toolName) || "shell_execute".equals(toolName)) {
+            return true;
         }
-        return "file_delete".equals(toolName) || "shell_execute".equals(toolName);
+        return PERMISSION_CONFIRM.equals(getPermissionMode());
     }
 
     public synchronized String buildToolPrompt(Set<String> implementedToolNames) {

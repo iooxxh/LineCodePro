@@ -722,6 +722,11 @@ public final class MainChatView extends FrameLayout implements MainContract.View
                 public void onBrowserModeChanged(String mode) {
                     presenter.onBrowserModeChanged(mode);
                 }
+
+                @Override
+                public void onBrowserJavaScriptChanged(boolean enabled) {
+                    presenter.onBrowserJavaScriptChanged(enabled);
+                }
             });
         }
         if ("theme".equals(screenId)) {
@@ -816,10 +821,12 @@ public final class MainChatView extends FrameLayout implements MainContract.View
             return new PluginPageScreenView(context, "插件页面", this::handleScreenBack);
         }
         if (screenId != null && screenId.startsWith("browser:")) {
-            return new InAppBrowserScreenView(context, screenId.substring("browser:".length()), this::handleScreenBack);
+            return new InAppBrowserScreenView(context, screenId.substring("browser:".length()),
+                    presenter.getOutputSettings().isBrowserJavaScriptEnabled(), this::handleScreenBack);
         }
         if ("browser".equals(screenId)) {
-            return new InAppBrowserScreenView(context, "about:blank", this::handleScreenBack);
+            return new InAppBrowserScreenView(context, "about:blank",
+                    presenter.getOutputSettings().isBrowserJavaScriptEnabled(), this::handleScreenBack);
         }
         if ("agentEdit".equals(screenId) || (screenId != null && screenId.startsWith("agentEdit:"))) {
             cn.lineai.model.ExtensionOverviewState overview = presenter.getExtensionOverview();
@@ -1079,7 +1086,7 @@ public final class MainChatView extends FrameLayout implements MainContract.View
         if ("llm".equals(screenId)) return new String[] {"交流语气", "思考强度", "保留 reasoning", "数学公式渲染"};
         if ("mcp".equals(screenId)) return new String[] {"MCP 执行模式", "SSH 工具", "网页搜索", "工具确认策略"};
         if ("theme".equals(screenId)) return new String[] {"深色主题", "浅色主题", "咖啡主题", "高对比模式"};
-        if ("output".equals(screenId)) return new String[] {"代码自动换行", "网页打开方式", "Markdown 预览"};
+        if ("output".equals(screenId)) return new String[] {"代码自动换行", "网页打开方式", "内置浏览器 JavaScript", "Markdown 预览"};
         if ("experimental".equals(screenId)) return new String[] {"实验性键盘避让", "实验性消息渲染"};
         if ("storage".equals(screenId)) return new String[] {"聊天记录", "配置文件", "Diff 缓存", "工作区占用"};
         if ("memory".equals(screenId)) return new String[] {"长期记忆", "项目记忆", "短期记忆", "检索索引"};

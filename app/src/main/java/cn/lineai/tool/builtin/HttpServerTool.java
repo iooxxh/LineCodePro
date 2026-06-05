@@ -7,6 +7,8 @@ import cn.lineai.tool.ToolResult;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.URLDecoder;
@@ -49,6 +51,13 @@ public final class HttpServerTool extends BaseTool {
             return stop();
         }
         return start(input.optInt("port", 0), input.optString("root"), context);
+    }
+
+    public static synchronized void stopActiveServer() {
+        if (activeServer != null) {
+            activeServer.stop();
+            activeServer = null;
+        }
     }
 
     private synchronized ToolResult start(int port, String rootPath, ToolContext context) {
@@ -101,7 +110,8 @@ public final class HttpServerTool extends BaseTool {
 
         SimpleFileServer(File root, int port) throws Exception {
             this.root = root.getCanonicalFile();
-            serverSocket = new ServerSocket(Math.max(0, port));
+            serverSocket = new ServerSocket();
+            serverSocket.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), Math.max(0, port)));
         }
 
         void start() {

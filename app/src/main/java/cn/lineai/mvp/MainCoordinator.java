@@ -67,6 +67,7 @@ import cn.lineai.tool.ToolResult;
 import cn.lineai.tool.ToolCategory;
 import cn.lineai.tool.builtin.AgentTool;
 import cn.lineai.tool.builtin.FileToolPathPolicy;
+import cn.lineai.tool.builtin.HttpServerTool;
 import cn.lineai.workspace.SafPathResolver;
 import cn.lineai.workspace.StoragePermissionManager;
 import cn.lineai.workspace.WorkspacePaths;
@@ -662,6 +663,7 @@ public final class MainCoordinator implements MainUiController {
     public void destroy() {
         detachView();
         cancelActiveGeneration();
+        HttpServerTool.stopActiveServer();
         backgroundTasks.shutdownNow();
     }
 
@@ -1509,6 +1511,12 @@ public final class MainCoordinator implements MainUiController {
     @Override
     public void onBrowserModeChanged(String mode) {
         outputSettingsRepository.setBrowserMode(mode);
+        render();
+    }
+
+    @Override
+    public void onBrowserJavaScriptChanged(boolean enabled) {
+        outputSettingsRepository.setBrowserJavaScriptEnabled(enabled);
         render();
     }
 

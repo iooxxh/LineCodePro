@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -13,7 +14,6 @@ import cn.lineai.tool.ToolCall;
 import cn.lineai.tool.ToolResult;
 import cn.lineai.ui.component.IconButtonView;
 import cn.lineai.ui.theme.LineTheme;
-import java.io.File;
 import java.util.Locale;
 import org.json.JSONObject;
 
@@ -59,9 +59,9 @@ public final class ToolCallWriteView extends LinearLayout {
             displayName = fileName.length() == 0 ? "未命名文件" : fileName;
             lang = langLabel(displayName);
         }
-        String relativePath = displayPath(targetPath);
-        if (relativePath.length() == 0) {
-            relativePath = displayName;
+        String shownPath = ToolCallUtils.workspaceDisplayPath(projectPath, targetPath);
+        if (shownPath.length() == 0) {
+            shownPath = displayName;
         }
 
         LinearLayout body = new LinearLayout(getContext());
@@ -101,9 +101,12 @@ public final class ToolCallWriteView extends LinearLayout {
         titleRow.addView(title, titleParams);
         meta.addView(titleRow, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
-        TextView path = LineTheme.text(getContext(), relativePath, LineTheme.FONT_XS, LineTheme.TEXT_TERTIARY, Typeface.NORMAL);
+        TextView path = LineTheme.text(getContext(), shownPath, LineTheme.FONT_XS, LineTheme.TEXT_TERTIARY, Typeface.NORMAL);
         path.setSingleLine(true);
-        meta.addView(path, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        path.setHorizontallyScrolling(true);
+        HorizontalScrollView pathScroll = horizontalPathScroll();
+        pathScroll.addView(path, new HorizontalScrollView.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        meta.addView(pathScroll, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
         View status = statusView(complete, error || rejected, statusColor);
         status.setBackground(LineTheme.roundedStroke(getContext(), LineTheme.SURFACE_LIGHT, 8, LineTheme.CODE_BORDER));
@@ -260,6 +263,12 @@ public final class ToolCallWriteView extends LinearLayout {
         addView(result, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
     }
 
+    private HorizontalScrollView horizontalPathScroll() {
+        HorizontalScrollView scroll = new HorizontalScrollView(getContext());
+        scroll.setHorizontalScrollBarEnabled(false);
+        return scroll;
+    }
+
     private String fileName(String path) {
         if (path == null || path.length() == 0) {
             return "";
@@ -278,7 +287,7 @@ public final class ToolCallWriteView extends LinearLayout {
     }
 
     private boolean isEditName(String name) {
-        String compact = name == null ? "" : name.toLowerCase(Locale.US).replace("_", "").replace("-", "");
+        String compact = name == null ? "" : name.toLowerCase(Locale.ROOT).replace("_", "").replace("-", "");
         return "fileedit".equals(compact) || "editfile".equals(compact);
     }
 
@@ -291,66 +300,11 @@ public final class ToolCallWriteView extends LinearLayout {
                 || input.has("edits"));
     }
 
-    private String displayPath(String path) {
-        String value = normalizePath(path);
-        if (value.length() == 0) {
-            return "";
-        }
-        String root = normalizePath(projectPath);
-        if (root.length() == 0 || !isAbsolute(value)) {
-            return stripLeadingRoot(value);
-        }
-        if (value.equals(root)) {
-            return ".";
-        }
-        String prefix = root.endsWith("/") ? root : root + "/";
-        if (value.startsWith(prefix)) {
-            return stripLeadingRoot(value.substring(prefix.length()));
-        }
-        return stripLeadingRoot(value);
-    }
-
-    private String normalizePath(String path) {
-        if (path == null || path.trim().length() == 0) {
-            return "";
-        }
-        String value = path.trim().replace('\\', '/');
-        while (value.contains("//")) {
-            value = value.replace("//", "/");
-        }
-        if (value.length() > 1 && value.endsWith("/")) {
-            value = value.substring(0, value.length() - 1);
-        }
-        if (!isAbsolute(value)) {
-            return value;
-        }
-        try {
-            return new File(value).getCanonicalPath().replace('\\', '/');
-        } catch (Exception ignored) {
-            return value;
-        }
-    }
-
-    private boolean isAbsolute(String path) {
-        return path.startsWith("/") || (path.length() > 2 && path.charAt(1) == ':');
-    }
-
-    private String stripLeadingRoot(String path) {
-        if (path == null) {
-            return "";
-        }
-        String value = path.replace('\\', '/');
-        while (value.startsWith("./")) {
-            value = value.substring(2);
-        }
-        return value;
-    }
-
     private String langLabel(String fileName) {
         int index = fileName.lastIndexOf('.');
         if (index < 0 || index + 1 >= fileName.length()) {
             return "TXT";
         }
-        return fileName.substring(index + 1).toUpperCase();
+        return fileName.substring(index + 1).toUpperCase(java.util.Locale.ROOT);
     }
 }

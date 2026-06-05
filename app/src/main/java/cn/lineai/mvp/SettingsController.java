@@ -39,6 +39,8 @@ public interface SettingsController {
 
     void onBrowserModeChanged(String mode);
 
+    void onBrowserJavaScriptChanged(boolean enabled);
+
     ThemeSettingsState getThemeSettings();
 
     void onThemeModeChanged(String mode);

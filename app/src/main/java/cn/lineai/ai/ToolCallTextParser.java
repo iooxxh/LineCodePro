@@ -197,8 +197,8 @@ public final class ToolCallTextParser {
     }
 
     private static int indexOfIgnoreCase(String source, String target, int fromIndex) {
-        return source.toLowerCase(java.util.Locale.US)
-                .indexOf(target.toLowerCase(java.util.Locale.US), Math.max(0, fromIndex));
+        return source.toLowerCase(java.util.Locale.ROOT)
+                .indexOf(target.toLowerCase(java.util.Locale.ROOT), Math.max(0, fromIndex));
     }
 
     private static String defaultXmlToolId(int index) {
@@ -249,7 +249,7 @@ public final class ToolCallTextParser {
         if (name.length() == 0) {
             return "";
         }
-        String compact = name.replace("-", "").replace("_", "").toLowerCase();
+        String compact = name.replace("-", "").replace("_", "").toLowerCase(java.util.Locale.ROOT);
         if ("filewrite".equals(compact) || "writefile".equals(compact)) return "file_write";
         if ("fileread".equals(compact) || "readfile".equals(compact)) return "file_read";
         if ("fileedit".equals(compact) || "editfile".equals(compact)) return "file_edit";
@@ -264,12 +264,12 @@ public final class ToolCallTextParser {
         if (source == null) {
             return false;
         }
-        String lower = source.toLowerCase();
+        String lower = source.toLowerCase(java.util.Locale.ROOT);
         return lower.contains("<tool_calls") || lower.contains("<tool_call");
     }
 
     private static String stripOpenToolMarkup(String text) {
-        String lower = text.toLowerCase();
+        String lower = text.toLowerCase(java.util.Locale.ROOT);
         int callsIndex = lower.indexOf("<tool_calls");
         int callIndex = lower.indexOf("<tool_call");
         int index;

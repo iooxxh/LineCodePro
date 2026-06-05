@@ -291,8 +291,8 @@ public final class OpenAiCompatibleProtocol extends AbstractHttpModelProtocol {
     }
 
     private void applyReasoningRequest(ModelConfig config, JSONObject body, ModelRequestOptions options) throws Exception {
-        String base = config.getBaseUrl().toLowerCase();
-        String model = ModelContextParser.apiModelId(config.getModelId()).toLowerCase();
+        String base = config.getBaseUrl().toLowerCase(java.util.Locale.ROOT);
+        String model = ModelContextParser.apiModelId(config.getModelId()).toLowerCase(java.util.Locale.ROOT);
         String effort = options.getReasoningEffort();
         boolean enabled = !AiBehaviorSettings.REASONING_OFF.equals(effort);
         if (base.contains("dashscope") || base.contains("aliyuncs") || model.contains("qwen")) {

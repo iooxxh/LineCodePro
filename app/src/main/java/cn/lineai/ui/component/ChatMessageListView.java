@@ -43,7 +43,7 @@ public final class ChatMessageListView extends FrameLayout {
         setClipToPadding(false);
 
         adapter = new MessageAdapter(context);
-        listView = new ListView(context);
+        listView = new TouchAwareListView(context);
         listView.setAdapter(adapter);
         listView.setBackgroundColor(LineTheme.BG);
         listView.setCacheColorHint(Color.TRANSPARENT);
@@ -59,13 +59,6 @@ public final class ChatMessageListView extends FrameLayout {
         listView.setSmoothScrollbarEnabled(true);
         listView.setStackFromBottom(false);
         listView.setTranscriptMode(AbsListView.TRANSCRIPT_MODE_DISABLED);
-        listView.setOnTouchListener((view, event) -> {
-            int action = event.getActionMasked();
-            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
-                followTailEnabled = false;
-            }
-            return false;
-        });
         addView(listView, new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
 
         scrollToBottomButton = new IconButtonView(context, IconButtonView.CHEVRON_DOWN);
@@ -73,13 +66,11 @@ public final class ChatMessageListView extends FrameLayout {
         refreshScrollToBottomButtonStyle();
         scrollToBottomButton.setVisibility(GONE);
         scrollToBottomButton.setOnClickListener(v -> scrollToBottom());
-        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.LOLLIPOP) {
-            scrollToBottomButton.setElevation(LineTheme.dp(context, 8));
-        }
+        scrollToBottomButton.setElevation(LineTheme.dp(context, 8));
         FrameLayout.LayoutParams buttonParams = new FrameLayout.LayoutParams(
                 LineTheme.dp(context, 44),
                 LineTheme.dp(context, 44),
-                Gravity.RIGHT | Gravity.BOTTOM
+                Gravity.END | Gravity.BOTTOM
         );
         buttonParams.rightMargin = LineTheme.dp(context, LineTheme.LG);
         buttonParams.bottomMargin = LineTheme.dp(context, LineTheme.LG);
@@ -500,6 +491,28 @@ public final class ChatMessageListView extends FrameLayout {
                 }
             }
             return true;
+        }
+    }
+
+    private final class TouchAwareListView extends ListView {
+        TouchAwareListView(Context context) {
+            super(context);
+        }
+
+        @Override
+        public boolean onTouchEvent(MotionEvent event) {
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE) {
+                followTailEnabled = false;
+            } else if (action == MotionEvent.ACTION_UP) {
+                performClick();
+            }
+            return super.onTouchEvent(event);
+        }
+
+        @Override
+        public boolean performClick() {
+            return super.performClick();
         }
     }
 }

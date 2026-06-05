@@ -48,7 +48,7 @@ final class WebSearchService {
         if (response.statusCode < 200 || response.statusCode >= 300) {
             throw new IllegalStateException("网页请求失败 " + response.statusCode + ": " + response.message);
         }
-        String normalized = response.contentType.toLowerCase().contains("html") ? htmlToText(response.body) : response.body;
+        String normalized = response.contentType.toLowerCase(java.util.Locale.ROOT).contains("html") ? htmlToText(response.body) : response.body;
         String compact = normalized.replaceAll("\\n{3,}", "\n\n").trim();
         if (compact.length() == 0) {
             return "网页内容为空或无法提取正文。";

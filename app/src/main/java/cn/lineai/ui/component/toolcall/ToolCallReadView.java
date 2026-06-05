@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.view.Gravity;
 import android.view.View;
+import android.widget.HorizontalScrollView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -14,17 +15,23 @@ import cn.lineai.ui.theme.LineTheme;
 import org.json.JSONObject;
 
 public final class ToolCallReadView extends LinearLayout {
+    private String projectPath = "";
+
     public ToolCallReadView(Context context) {
         super(context);
         setOrientation(VERTICAL);
         setBackground(LineTheme.roundedStroke(context, LineTheme.CODE_BG, 8, LineTheme.CODE_BORDER));
     }
 
+    public void setProjectPath(String projectPath) {
+        this.projectPath = projectPath == null ? "" : projectPath;
+    }
+
     public void bind(ToolCall toolCall, ToolResult result) {
         removeAllViews();
         String name = toolCall == null ? "" : toolCall.getName();
         JSONObject input = ToolCallUtils.parseInput(toolCall);
-        String label = ToolCallUtils.inputLabel(name, input);
+        String label = ToolCallUtils.displayInputLabel(name, input, projectPath);
         boolean complete = result != null;
         boolean error = result != null && result.isError();
         String actionLabel = actionLabel(name);
@@ -56,7 +63,10 @@ public final class ToolCallReadView extends LinearLayout {
         TextView path = LineTheme.text(getContext(), label, LineTheme.FONT_SM, error ? LineTheme.DANGER : LineTheme.TEXT, Typeface.NORMAL);
         path.setTypeface(Typeface.MONOSPACE);
         path.setSingleLine(true);
-        textBlock.addView(path, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
+        path.setHorizontallyScrolling(true);
+        HorizontalScrollView pathScroll = horizontalPathScroll();
+        pathScroll.addView(path, new HorizontalScrollView.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
+        textBlock.addView(pathScroll, new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
         View status = statusView(complete, error);
         header.addView(status, new LayoutParams(LineTheme.dp(getContext(), 18), LineTheme.dp(getContext(), 18)));
@@ -86,6 +96,12 @@ public final class ToolCallReadView extends LinearLayout {
             return IconButtonView.FOLDER_OPEN;
         }
         return IconButtonView.EXPAND;
+    }
+
+    private HorizontalScrollView horizontalPathScroll() {
+        HorizontalScrollView scroll = new HorizontalScrollView(getContext());
+        scroll.setHorizontalScrollBarEnabled(false);
+        return scroll;
     }
 
     private View statusView(boolean complete, boolean error) {

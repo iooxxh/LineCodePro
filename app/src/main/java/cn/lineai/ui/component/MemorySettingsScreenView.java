@@ -318,7 +318,7 @@ public final class MemorySettingsScreenView extends ScreenScaffoldView {
 
     private LinearLayout actionRow() {
         LinearLayout row = new LinearLayout(getContext());
-        row.setGravity(Gravity.RIGHT | Gravity.CENTER_VERTICAL);
+        row.setGravity(Gravity.END | Gravity.CENTER_VERTICAL);
         row.setOrientation(LinearLayout.HORIZONTAL);
         LinearLayout.LayoutParams params = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);
         params.topMargin = LineTheme.dp(getContext(), LineTheme.LG);

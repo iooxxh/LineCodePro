@@ -13,6 +13,8 @@ public final class OutputSettingsScreenView extends ScreenScaffoldView {
         void onCodeWrapChanged(boolean enabled);
 
         void onBrowserModeChanged(String mode);
+
+        void onBrowserJavaScriptChanged(boolean enabled);
     }
 
     private static final String PREVIEW_MARKDOWN =
@@ -43,6 +45,7 @@ public final class OutputSettingsScreenView extends ScreenScaffoldView {
                 : settings;
         codeWrapEnabled = safeSettings.isCodeWrapEnabled();
         browserMode = safeSettings.getBrowserMode();
+        boolean browserJavaScriptEnabled = safeSettings.isBrowserJavaScriptEnabled();
         LinearLayout content = getContent();
 
         previewView = new MarkdownView(context);
@@ -68,7 +71,10 @@ public final class OutputSettingsScreenView extends ScreenScaffoldView {
                 OutputSettings.BROWSER_EXTERNAL.equals(browserMode),
                 () -> setBrowserMode(OutputSettings.BROWSER_EXTERNAL));
         browser.addRow(builtinBrowserRow, true, 52);
-        browser.addRow(externalBrowserRow, false);
+        browser.addRow(externalBrowserRow, true, 52);
+        browser.addRow(new SwitchRowView(context, IconButtonView.CODE, "内置浏览器 JavaScript", "关闭后应用内网页不会执行脚本",
+                browserJavaScriptEnabled,
+                (buttonView, isChecked) -> listener.onBrowserJavaScriptChanged(isChecked)), false);
         content.addView(browser, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
 
         SettingsSectionView preview = new SettingsSectionView(context, "预览");

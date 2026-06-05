@@ -1,5 +1,6 @@
 package cn.lineai;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.Manifest;
 import android.content.Intent;
@@ -27,6 +28,7 @@ public final class MainActivity extends Activity implements MainChatView.Workspa
     private MainCoordinator presenter;
     private MainChatView mainView;
     private MainChatView.DocumentPickCallback documentPickCallback;
+    private Object backCallback;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -37,10 +39,12 @@ public final class MainActivity extends Activity implements MainChatView.Workspa
         mainView = new MainChatView(this, presenter);
         setContentView(mainView);
         presenter.attachView(mainView);
+        registerBackCallback();
     }
 
     @Override
     protected void onDestroy() {
+        unregisterBackCallback();
         presenter.destroy();
         super.onDestroy();
     }
@@ -68,12 +72,12 @@ public final class MainActivity extends Activity implements MainChatView.Workspa
             return;
         }
         Uri uri = data.getData();
-        int flags = data.getFlags() & (Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
-        if (flags != 0) {
-            try {
-                getContentResolver().takePersistableUriPermission(uri, flags);
-            } catch (SecurityException ignored) {
-            }
+        int flags = data.getFlags();
+        if ((flags & Intent.FLAG_GRANT_READ_URI_PERMISSION) != 0) {
+            takePersistableReadPermission(uri);
+        }
+        if ((flags & Intent.FLAG_GRANT_WRITE_URI_PERMISSION) != 0) {
+            takePersistableWritePermission(uri);
         }
         presenter.onExternalProjectTreePicked(uri.toString());
     }
@@ -87,11 +91,53 @@ public final class MainActivity extends Activity implements MainChatView.Workspa
     }
 
     @Override
+    @SuppressLint("GestureBackNavigation")
     public void onBackPressed() {
-        if (mainView != null && mainView.handleBackPressed()) {
+        if (handleBackNavigation()) {
             return;
         }
         super.onBackPressed();
+    }
+
+    private boolean handleBackNavigation() {
+        return mainView != null && mainView.handleBackPressed();
+    }
+
+    private void registerBackCallback() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerPlatformBackCallback();
+        }
+    }
+
+    private void unregisterBackCallback() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            unregisterPlatformBackCallback();
+        }
+    }
+
+    @SuppressLint("NewApi")
+    private void registerPlatformBackCallback() {
+        android.window.OnBackInvokedCallback callback = () -> {
+            if (!handleBackNavigation()) {
+                finish();
+            }
+        };
+        backCallback = callback;
+        getOnBackInvokedDispatcher().registerOnBackInvokedCallback(
+                android.window.OnBackInvokedDispatcher.PRIORITY_DEFAULT,
+                callback
+        );
+    }
+
+    @SuppressLint("NewApi")
+    private void unregisterPlatformBackCallback() {
+        Object callback = backCallback;
+        backCallback = null;
+        if (callback instanceof android.window.OnBackInvokedCallback) {
+            getOnBackInvokedDispatcher().unregisterOnBackInvokedCallback(
+                    (android.window.OnBackInvokedCallback) callback
+            );
+        }
     }
 
     private void configureWindow() {
@@ -103,22 +149,20 @@ public final class MainActivity extends Activity implements MainChatView.Workspa
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             window.setDecorFitsSystemWindows(false);
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            int flags = window.getDecorView().getSystemUiVisibility();
-            if (isLightColor(LineTheme.BG)) {
-                flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-            } else {
-                flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                if (isLightColor(LineTheme.BG)) {
-                    flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-                } else {
-                    flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-                }
-            }
-            window.getDecorView().setSystemUiVisibility(flags);
+        int flags = window.getDecorView().getSystemUiVisibility();
+        if (isLightColor(LineTheme.BG)) {
+            flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+        } else {
+            flags &= ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (isLightColor(LineTheme.BG)) {
+                flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            } else {
+                flags &= ~View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
+            }
+        }
+        window.getDecorView().setSystemUiVisibility(flags);
     }
 
     private boolean isLightColor(int color) {
@@ -178,12 +222,10 @@ public final class MainActivity extends Activity implements MainChatView.Workspa
             openManageAllFilesPermissionSettings();
             return;
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            requestPermissions(new String[] {
-                    Manifest.permission.READ_EXTERNAL_STORAGE,
-                    Manifest.permission.WRITE_EXTERNAL_STORAGE
-            }, REQUEST_LEGACY_STORAGE);
-        }
+        requestPermissions(new String[] {
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE
+        }, REQUEST_LEGACY_STORAGE);
     }
 
     @Override
@@ -212,12 +254,23 @@ public final class MainActivity extends Activity implements MainChatView.Workspa
         Uri uri = data.getData();
         int flags = data.getFlags() & Intent.FLAG_GRANT_READ_URI_PERMISSION;
         if (flags != 0) {
-            try {
-                getContentResolver().takePersistableUriPermission(uri, flags);
-            } catch (SecurityException ignored) {
-            }
+            takePersistableReadPermission(uri);
         }
         callback.onDocumentPicked(uri.toString(), displayName(uri));
+    }
+
+    private void takePersistableReadPermission(Uri uri) {
+        try {
+            getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        } catch (SecurityException ignored) {
+        }
+    }
+
+    private void takePersistableWritePermission(Uri uri) {
+        try {
+            getContentResolver().takePersistableUriPermission(uri, Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+        } catch (SecurityException ignored) {
+        }
     }
 
     private String displayName(Uri uri) {

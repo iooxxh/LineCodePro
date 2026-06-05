@@ -12,7 +12,7 @@ public final class MessageActionBarView extends LinearLayout {
     public MessageActionBarView(Context context, int align, boolean recallEnabled) {
         super(context);
         setOrientation(HORIZONTAL);
-        setGravity(align == ALIGN_RIGHT ? Gravity.RIGHT : Gravity.LEFT);
+        setGravity(align == ALIGN_RIGHT ? Gravity.END : Gravity.START);
         setMinimumHeight(LineTheme.dp(context, 22));
 
         IconButtonView copy = icon(context, IconButtonView.COPY);

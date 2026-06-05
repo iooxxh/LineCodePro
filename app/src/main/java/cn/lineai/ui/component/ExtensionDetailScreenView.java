@@ -5,6 +5,7 @@ import android.content.Context;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.ColorDrawable;
+import android.os.Environment;
 import android.view.Gravity;
 import android.view.View;
 import android.view.Window;
@@ -172,7 +173,7 @@ public final class ExtensionDetailScreenView extends ScreenScaffoldView {
         ((MainChatView.WorkspaceHost) context).openDocumentPicker("*/*", new String[] {"skill.zip"}, new MainChatView.DocumentPickCallback() {
             @Override
             public void onDocumentPicked(String uri, String displayName) {
-                String lower = (displayName == null ? "" : displayName).toLowerCase();
+                String lower = (displayName == null ? "" : displayName).toLowerCase(java.util.Locale.ROOT);
                 if (!lower.endsWith(".zip") && !lower.endsWith(".md")) {
                     Toast.makeText(getContext(), "请选择 .zip 或 SKILL.md", Toast.LENGTH_SHORT).show();
                     return;
@@ -225,7 +226,8 @@ public final class ExtensionDetailScreenView extends ScreenScaffoldView {
     private void showInstallSkillDialog() {
         Dialog dialog = createDialog();
         LinearLayout panel = panel("安装 SKILL");
-        FormTextFieldView path = new FormTextFieldView(getContext(), "来源路径", "", "/sdcard/Download/skill.zip", "支持目录、SKILL.md 或 .zip。", false, false);
+        String downloadExample = Environment.getExternalStorageDirectory().getPath() + "/Download/skill.zip";
+        FormTextFieldView path = new FormTextFieldView(getContext(), "来源路径", "", downloadExample, "支持目录、SKILL.md 或 .zip。", false, false);
         FormTextFieldView name = new FormTextFieldView(getContext(), "名称（可选）", "", "skill-name", null, false, false);
         RadioGroup scope = locationGroup();
         panel.addView(path);

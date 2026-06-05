@@ -209,7 +209,14 @@ public final class BottomSheetView extends FrameLayout {
                 }
                 return fired;
             }
-            if (eventAction == MotionEvent.ACTION_UP || eventAction == MotionEvent.ACTION_CANCEL) {
+            if (eventAction == MotionEvent.ACTION_UP) {
+                if (!fired) {
+                    view.performClick();
+                }
+                cancel();
+                return fired;
+            }
+            if (eventAction == MotionEvent.ACTION_CANCEL) {
                 cancel();
                 return fired;
             }

@@ -27,6 +27,8 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.Test;
@@ -111,6 +113,49 @@ public final class CodexResponsesProtocolTest {
         }
     }
 
+    @Test(timeout = 4000)
+    public void codexStreamUsesJsonTypeAndStopsAfterCompleted() throws Exception {
+        LocalSseServer server = new LocalSseServer(
+                sse("message", new JSONObject()
+                        .put("type", "response.output_text.delta")
+                        .put("delta", "hello")
+                        .toString())
+                        + sse("message", new JSONObject()
+                        .put("type", "response.completed")
+                        .put("response", new JSONObject().put("id", "resp_1"))
+                        .toString()),
+                true);
+        server.start();
+        try {
+            ModelConfig config = new ModelConfig(
+                    "m1",
+                    "Codex",
+                    ModelProtocolType.CODEX_RESPONSES,
+                    "Codex",
+                    "http://127.0.0.1:" + server.port() + "/v1/chat/completions",
+                    "sk-test",
+                    "gpt-5-codex"
+            );
+            ArrayList<ModelMessage> messages = new ArrayList<>();
+            messages.add(new UserModelMessage("say hello"));
+            RecordingCallback callback = new RecordingCallback();
+
+            ModelCompletionResponse response = new CodexResponsesProtocol().stream(
+                    config,
+                    messages,
+                    callback,
+                    null,
+                    new ModelRequestOptions(AiBehaviorSettings.REASONING_OFF, false, Collections.emptyList())
+            );
+
+            assertEquals("hello", response.getText());
+            assertTrue(callback.awaitText());
+            assertEquals("hello", callback.text());
+        } finally {
+            server.close();
+        }
+    }
+
     private String sse(String event, String data) {
         return "event: " + event + "\n"
                 + "data: " + data + "\n\n";
@@ -119,13 +164,20 @@ public final class CodexResponsesProtocolTest {
     private static final class LocalSseServer implements AutoCloseable {
         private final ServerSocket serverSocket;
         private final String responseBody;
+        private final boolean holdOpenAfterResponse;
+        private final CountDownLatch holdRelease = new CountDownLatch(1);
         private Thread thread;
         private String requestPath = "";
         private String requestBody = "";
 
         LocalSseServer(String responseBody) throws Exception {
+            this(responseBody, false);
+        }
+
+        LocalSseServer(String responseBody, boolean holdOpenAfterResponse) throws Exception {
             serverSocket = new ServerSocket(0);
             this.responseBody = responseBody == null ? "" : responseBody;
+            this.holdOpenAfterResponse = holdOpenAfterResponse;
         }
 
         void start() {
@@ -180,12 +232,16 @@ public final class CodexResponsesProtocolTest {
                 requestBody = new String(body, 0, offset);
                 byte[] response = responseBody.getBytes(StandardCharsets.UTF_8);
                 OutputStream output = socket.getOutputStream();
-                output.write(("HTTP/1.1 200 OK\r\n"
+                String headers = "HTTP/1.1 200 OK\r\n"
                         + "Content-Type: text/event-stream\r\n"
-                        + "Content-Length: " + response.length + "\r\n"
-                        + "Connection: close\r\n\r\n").getBytes(StandardCharsets.UTF_8));
+                        + (holdOpenAfterResponse ? "Connection: keep-alive\r\n" : "Content-Length: " + response.length + "\r\nConnection: close\r\n")
+                        + "\r\n";
+                output.write(headers.getBytes(StandardCharsets.UTF_8));
                 output.write(response);
                 output.flush();
+                if (holdOpenAfterResponse) {
+                    holdRelease.await(3, TimeUnit.SECONDS);
+                }
             } finally {
                 socket.close();
             }
@@ -193,10 +249,34 @@ public final class CodexResponsesProtocolTest {
 
         @Override
         public void close() throws Exception {
+            holdRelease.countDown();
             serverSocket.close();
             if (thread != null) {
                 thread.join(1000);
             }
+        }
+    }
+
+    private static final class RecordingCallback implements ModelStreamCallback {
+        private final CountDownLatch textLatch = new CountDownLatch(1);
+        private final StringBuilder text = new StringBuilder();
+
+        @Override
+        public void onTextDelta(String delta) {
+            text.append(delta);
+            textLatch.countDown();
+        }
+
+        @Override
+        public void onReasoningDelta(String delta) {
+        }
+
+        boolean awaitText() throws InterruptedException {
+            return textLatch.await(1, TimeUnit.SECONDS);
+        }
+
+        String text() {
+            return text.toString();
         }
     }
 

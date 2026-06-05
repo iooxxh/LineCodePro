@@ -1,6 +1,7 @@
 package cn.lineai.ui.theme;
 
 import android.content.Context;
+import android.graphics.text.LineBreaker;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
@@ -151,8 +152,8 @@ public final class LineTheme {
         if (style != Typeface.NORMAL) {
             textView.setTypeface(Typeface.DEFAULT, style);
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            textView.setBreakStrategy(android.text.Layout.BREAK_STRATEGY_SIMPLE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            textView.setBreakStrategy(LineBreaker.BREAK_STRATEGY_SIMPLE);
         }
         return textView;
     }

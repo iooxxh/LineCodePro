@@ -64,6 +64,9 @@ public final class ThinkingBlockView extends LinearLayout {
                 view.getParent().requestDisallowInterceptTouchEvent(true);
             } else if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
                 view.getParent().requestDisallowInterceptTouchEvent(false);
+                if (action == MotionEvent.ACTION_UP) {
+                    view.performClick();
+                }
             }
             return false;
         });
@@ -101,6 +104,11 @@ public final class ThinkingBlockView extends LinearLayout {
 
         MaxHeightScrollView(Context context) {
             super(context);
+        }
+
+        @Override
+        public boolean performClick() {
+            return super.performClick();
         }
 
         void setMaxHeightDp(int maxHeightDp) {

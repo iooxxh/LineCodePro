@@ -1,5 +1,6 @@
 package cn.lineai.ui.component;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -17,7 +18,7 @@ public final class InAppBrowserScreenView extends LinearLayout {
 
     private final Paint borderPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
 
-    public InAppBrowserScreenView(Context context, String url, Listener listener) {
+    public InAppBrowserScreenView(Context context, String url, boolean javaScriptEnabled, Listener listener) {
         super(context);
         setOrientation(VERTICAL);
         setBackgroundColor(LineTheme.BG);
@@ -58,11 +59,25 @@ public final class InAppBrowserScreenView extends LinearLayout {
 
         WebView webView = new WebView(context);
         webView.setBackgroundColor(LineTheme.BG);
-        webView.getSettings().setJavaScriptEnabled(true);
+        setJavaScriptEnabled(webView, javaScriptEnabled);
         webView.getSettings().setDomStorageEnabled(true);
-        if (url != null && url.length() > 0) {
-            webView.loadUrl(url);
+        String safeUrl = safeHttpUrl(url);
+        if (safeUrl.length() > 0) {
+            webView.loadUrl(safeUrl);
+        } else {
+            webView.loadDataWithBaseURL(null, "Unsupported URL", "text/plain", "utf-8", null);
         }
         addView(webView, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, 0, 1f));
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    private static void setJavaScriptEnabled(WebView webView, boolean enabled) {
+        webView.getSettings().setJavaScriptEnabled(enabled);
+    }
+
+    private static String safeHttpUrl(String url) {
+        String value = url == null ? "" : url.trim();
+        String lower = value.toLowerCase(java.util.Locale.ROOT);
+        return lower.startsWith("https://") || lower.startsWith("http://") ? value : "";
     }
 }

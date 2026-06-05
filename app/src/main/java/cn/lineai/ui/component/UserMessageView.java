@@ -15,7 +15,7 @@ public final class UserMessageView extends LinearLayout {
     public UserMessageView(Context context) {
         super(context);
         setOrientation(VERTICAL);
-        setGravity(Gravity.RIGHT);
+        setGravity(Gravity.END);
         LineTheme.padding(this, LineTheme.LG, 0, LineTheme.LG, 6);
 
         contentText = LineTheme.text(context, "", 16, LineTheme.TEXT_ON_COLOR, Typeface.NORMAL);

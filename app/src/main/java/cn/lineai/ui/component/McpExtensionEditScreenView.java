@@ -208,7 +208,7 @@ public final class McpExtensionEditScreenView extends ScreenScaffoldView {
     }
 
     private boolean validUrl(String url) {
-        String value = url == null ? "" : url.trim().toLowerCase();
+        String value = url == null ? "" : url.trim().toLowerCase(java.util.Locale.ROOT);
         return value.startsWith("http://") || value.startsWith("https://");
     }
 

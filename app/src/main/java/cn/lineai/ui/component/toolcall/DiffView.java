@@ -51,14 +51,14 @@ public final class DiffView extends HorizontalScrollView {
         }
         LineTheme.padding(row, LineTheme.SM, 1, LineTheme.SM, 1);
 
-        row.addView(codeCell(line.oldLine > 0 ? String.valueOf(line.oldLine) : "", LineTheme.TEXT_TERTIARY, 28, Gravity.RIGHT));
-        row.addView(codeCell(line.newLine > 0 ? String.valueOf(line.newLine) : "", LineTheme.TEXT_TERTIARY, 28, Gravity.RIGHT));
+        row.addView(codeCell(line.oldLine > 0 ? String.valueOf(line.oldLine) : "", LineTheme.TEXT_TERTIARY, 28, Gravity.END));
+        row.addView(codeCell(line.newLine > 0 ? String.valueOf(line.newLine) : "", LineTheme.TEXT_TERTIARY, 28, Gravity.END));
         int textColor = line.type == DiffLine.ADD ? LineTheme.DIFF_ADD_TEXT
                 : line.type == DiffLine.REMOVE ? LineTheme.DIFF_DEL_TEXT
                 : LineTheme.TEXT;
         String prefix = line.type == DiffLine.ADD ? "+" : line.type == DiffLine.REMOVE ? "-" : " ";
-        row.addView(codeCell(prefix, textColor, 12, Gravity.LEFT));
-        row.addView(codeCell(line.content, textColor, -1, Gravity.LEFT));
+        row.addView(codeCell(prefix, textColor, 12, Gravity.START));
+        row.addView(codeCell(line.content, textColor, -1, Gravity.START));
         return row;
     }
 

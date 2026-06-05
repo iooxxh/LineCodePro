@@ -45,7 +45,7 @@ public final class SettingsScreenView extends LinearLayout {
         });
         addSection(content, "界面与输出", new RowSpec[] {
                 new RowSpec("theme", "主题与外观", "主题模式、自定义颜色和高对比外观", IconButtonView.PALETTE),
-                new RowSpec("output", "输出与浏览", "代码换行、网页打开方式和 Markdown 预览", IconButtonView.MONITOR),
+                new RowSpec("output", "输出与浏览", "代码换行、网页打开方式和内置浏览器 JS", IconButtonView.MONITOR),
                 new RowSpec("experimental", "实验性渲染", "仍在验证的消息渲染能力", IconButtonView.FLASK_CONICAL),
         });
         addSection(content, "数据与系统", new RowSpec[] {
@@ -61,7 +61,7 @@ public final class SettingsScreenView extends LinearLayout {
 
     private void addSection(LinearLayout content, String title, RowSpec[] rows) {
         Context context = getContext();
-        TextView sectionTitle = LineTheme.textMedium(context, title.toUpperCase(), LineTheme.FONT_XS, LineTheme.TEXT_TERTIARY);
+        TextView sectionTitle = LineTheme.textMedium(context, title.toUpperCase(java.util.Locale.ROOT), LineTheme.FONT_XS, LineTheme.TEXT_TERTIARY);
         sectionTitle.setLetterSpacing(0.05f);
         LineTheme.padding(sectionTitle, LineTheme.LG, 0, LineTheme.LG, 0);
         LinearLayout.LayoutParams sectionParams = new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT);

@@ -78,7 +78,7 @@ public final class StorageManagementScreenView extends ScreenScaffoldView {
 
         LinearLayout meta = new LinearLayout(context);
         meta.setOrientation(VERTICAL);
-        meta.setGravity(Gravity.RIGHT);
+        meta.setGravity(Gravity.END);
         meta.addView(LineTheme.text(context, size, LineTheme.FONT_MD, LineTheme.TEXT, Typeface.BOLD), new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT));
         TextView countView = LineTheme.text(context, count, LineTheme.FONT_XS, LineTheme.TEXT_TERTIARY, Typeface.NORMAL);
         LinearLayout.LayoutParams countParams = new LinearLayout.LayoutParams(LayoutParams.WRAP_CONTENT, LayoutParams.WRAP_CONTENT);

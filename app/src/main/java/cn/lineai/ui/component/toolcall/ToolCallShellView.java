@@ -10,6 +10,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
 import android.widget.TextView;
+import cn.lineai.R;
 import cn.lineai.tool.ToolCall;
 import cn.lineai.tool.ToolResult;
 import cn.lineai.ui.component.IconButtonView;
@@ -125,7 +126,7 @@ public final class ToolCallShellView extends LinearLayout {
         outputHeader.addView(outputTitle, titleParams);
 
         outputMeta = LineTheme.text(context, "", LineTheme.FONT_XS, LineTheme.TEXT_TERTIARY, Typeface.NORMAL);
-        outputMeta.setGravity(Gravity.RIGHT);
+        outputMeta.setGravity(Gravity.END);
         LayoutParams metaParams = new LayoutParams(0, LayoutParams.WRAP_CONTENT, 1f);
         metaParams.leftMargin = LineTheme.dp(context, 5);
         outputHeader.addView(outputMeta, metaParams);
@@ -148,6 +149,9 @@ public final class ToolCallShellView extends LinearLayout {
             int action = event.getActionMasked();
             boolean active = action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_MOVE;
             view.getParent().requestDisallowInterceptTouchEvent(active);
+            if (action == MotionEvent.ACTION_UP) {
+                view.performClick();
+            }
             return false;
         });
         LineTheme.padding(expandedScrollView, LineTheme.SM, LineTheme.SM, LineTheme.SM, LineTheme.SM);
@@ -237,7 +241,7 @@ public final class ToolCallShellView extends LinearLayout {
         statusIcon.setIconColor(statusColor);
         outputTitle.setText(error ? "执行失败" : "执行完成");
         outputTitle.setTextColor(statusColor);
-        outputMeta.setText(lineCount + " 行");
+        outputMeta.setText(getResources().getString(R.string.shell_output_line_count, lineCount));
         expandIcon.setVisibility(canExpand ? VISIBLE : GONE);
 
         collapsedOutputView.setText(collapsePreview(displayResult));
@@ -354,6 +358,11 @@ public final class ToolCallShellView extends LinearLayout {
         BoundedScrollView(Context context, int maxHeightDp) {
             super(context);
             this.maxHeightDp = maxHeightDp;
+        }
+
+        @Override
+        public boolean performClick() {
+            return super.performClick();
         }
 
         @Override

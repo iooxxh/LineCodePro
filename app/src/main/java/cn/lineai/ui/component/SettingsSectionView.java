@@ -54,7 +54,7 @@ public final class SettingsSectionView extends LinearLayout {
     }
 
     public void setTitle(String title) {
-        header.setText((title == null ? "" : title).toUpperCase());
+        header.setText((title == null ? "" : title).toUpperCase(java.util.Locale.ROOT));
     }
 
     public void removeAllRows() {

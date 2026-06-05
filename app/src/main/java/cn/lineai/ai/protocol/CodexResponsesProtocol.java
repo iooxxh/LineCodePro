@@ -90,7 +90,10 @@ public final class CodexResponsesProtocol extends AbstractHttpModelProtocol {
                 if (event.has("error")) {
                     throw new ModelCompletionException("Codex 流式错误: " + event.opt("error"));
                 }
-                String type = eventType == null || eventType.length() == 0 ? event.optString("type") : eventType;
+                String type = event.optString("type");
+                if (type.length() == 0) {
+                    type = eventType == null ? "" : eventType;
+                }
 
                 if ("response.custom_tool_call_input.delta".equals(type) && event.has("delta")) {
                     appendCustomToolInput(customToolInputs, event.optString("item_id"), event.optString("delta"));
@@ -130,7 +133,13 @@ public final class CodexResponsesProtocol extends AbstractHttpModelProtocol {
                     return;
                 }
 
-                if (("response.completed".equals(type) || "response.output_item.done".equals(type)) && event.has("response")) {
+                if ("response.completed".equals(type)) {
+                    JSONObject response = event.optJSONObject("response");
+                    if (response != null) {
+                        mergeOutputArray(response.optJSONArray("output"), text, reasoning, toolCallBuilders, customToolInputs, callback);
+                    }
+                    throw new SseStreamCompleteException();
+                } else if ("response.output_item.done".equals(type) && event.has("response")) {
                     JSONObject response = event.optJSONObject("response");
                     if (response != null) {
                         mergeOutputArray(response.optJSONArray("output"), text, reasoning, toolCallBuilders, customToolInputs, callback);

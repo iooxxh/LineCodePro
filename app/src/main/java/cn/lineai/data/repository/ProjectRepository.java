@@ -212,7 +212,7 @@ public final class ProjectRepository {
         path.mkdirs();
         long now = System.currentTimeMillis();
         ProjectRecord project = new ProjectRecord(
-                "managed:" + cleanName.toLowerCase(),
+                "managed:" + cleanName.toLowerCase(java.util.Locale.ROOT),
                 cleanName,
                 path.getAbsolutePath(),
                 WorkspacePaths.SOURCE_MANAGED,

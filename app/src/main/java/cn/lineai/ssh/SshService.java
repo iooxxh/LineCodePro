@@ -1,5 +1,6 @@
 package cn.lineai.ssh;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -16,6 +17,8 @@ import com.jcraft.jsch.ChannelSftp;
 import com.jcraft.jsch.ChannelExec;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.Session;
+import com.jcraft.jsch.UserInfo;
+import java.io.File;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Properties;
@@ -60,7 +63,9 @@ public final class SshService {
     private static final String TERMUX_RESULT_EXIT_CODE = "exitCode";
     private static final String TERMUX_RESULT_ERR = "err";
     private static final String TERMUX_RESULT_ERRMSG = "errmsg";
+    @SuppressLint("SdCardPath")
     private static final String TERMUX_HOME = "/data/data/com.termux/files/home";
+    @SuppressLint("SdCardPath")
     private static final String TERMUX_SH = "/data/data/com.termux/files/usr/bin/sh";
     private static final Pattern PRIVATE_KEY_PATTERN = Pattern.compile(
             "LINEAI_PRIVATE_KEY_BEGIN\\n([\\s\\S]*?)\\nLINEAI_PRIVATE_KEY_END"
@@ -369,6 +374,7 @@ public final class SshService {
 
     private Session createSession(SshConfig config, int timeoutMs) throws Exception {
         JSch jsch = new JSch();
+        jsch.setKnownHosts(knownHostsFile().getAbsolutePath());
         if (config.getPrivateKey().trim().length() > 0) {
             byte[] passphrase = config.getPassphrase().length() > 0
                     ? config.getPassphrase().getBytes(StandardCharsets.UTF_8)
@@ -385,14 +391,59 @@ public final class SshService {
             session.setPassword(config.getPassword());
         }
         Properties properties = new Properties();
-        properties.put("StrictHostKeyChecking", "no");
+        properties.put("StrictHostKeyChecking", "ask");
         properties.put("IdentitiesOnly", "yes");
         properties.put("PreferredAuthentications", config.getPrivateKey().trim().length() > 0
                 ? "publickey,password,keyboard-interactive"
                 : "password,keyboard-interactive,publickey");
         session.setConfig(properties);
+        session.setUserInfo(new TrustOnFirstUseUserInfo());
         session.connect(timeoutMs);
         return session;
+    }
+
+    private File knownHostsFile() throws Exception {
+        File dir = new File(context.getFilesDir(), "ssh");
+        if (!dir.exists() && !dir.mkdirs()) {
+            throw new IllegalStateException("无法创建 SSH 配置目录: " + dir.getPath());
+        }
+        File file = new File(dir, "known_hosts");
+        if (!file.exists() && !file.createNewFile()) {
+            throw new IllegalStateException("无法创建 known_hosts 文件: " + file.getPath());
+        }
+        return file;
+    }
+
+    private static final class TrustOnFirstUseUserInfo implements UserInfo {
+        @Override
+        public String getPassphrase() {
+            return null;
+        }
+
+        @Override
+        public String getPassword() {
+            return null;
+        }
+
+        @Override
+        public boolean promptPassword(String message) {
+            return false;
+        }
+
+        @Override
+        public boolean promptPassphrase(String message) {
+            return false;
+        }
+
+        @Override
+        public boolean promptYesNo(String message) {
+            String text = message == null ? "" : message.toLowerCase(java.util.Locale.ROOT);
+            return !text.contains("has changed") && !text.contains("offending key");
+        }
+
+        @Override
+        public void showMessage(String message) {
+        }
     }
 
     private TermuxSetupResult parseTermuxSetupOutput(String output) {

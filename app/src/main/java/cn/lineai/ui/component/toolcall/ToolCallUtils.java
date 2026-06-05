@@ -1,6 +1,7 @@
 package cn.lineai.ui.component.toolcall;
 
 import cn.lineai.tool.ToolCall;
+import java.io.File;
 import org.json.JSONObject;
 
 final class ToolCallUtils {
@@ -30,6 +31,47 @@ final class ToolCallUtils {
             }
         }
         return name == null ? "" : name;
+    }
+
+    static String displayInputLabel(String name, JSONObject input, String workspacePath) {
+        if (input == null) {
+            return name == null ? "" : name;
+        }
+        if ("file_read".equals(name)) {
+            String filePath = input.optString("file_path");
+            if (filePath.length() > 0) {
+                return workspaceDisplayPath(workspacePath, filePath);
+            }
+        }
+        if ("list_dir".equals(name)) {
+            String path = input.optString("path");
+            if (path.length() > 0) {
+                return workspaceDisplayPath(workspacePath, path);
+            }
+        }
+        return inputLabel(name, input);
+    }
+
+    static String workspaceDisplayPath(String workspacePath, String path) {
+        String value = normalizePath(path);
+        if (value.length() == 0) {
+            return "";
+        }
+        if (!isAbsolutePath(value)) {
+            return stripLeadingCurrentDir(value);
+        }
+        String root = normalizePath(workspacePath);
+        if (root.length() == 0 || !isAbsolutePath(root)) {
+            return value;
+        }
+        if (value.equals(root)) {
+            return ".";
+        }
+        String prefix = root.endsWith("/") ? root : root + "/";
+        if (value.startsWith(prefix)) {
+            return stripLeadingCurrentDir(value.substring(prefix.length()));
+        }
+        return value;
     }
 
     static String prettyJson(JSONObject input) {
@@ -74,5 +116,44 @@ final class ToolCallUtils {
 
     static boolean isAgentPipelineTool(String name) {
         return "agent_pipeline".equals(name);
+    }
+
+    private static String normalizePath(String path) {
+        if (path == null || path.trim().length() == 0) {
+            return "";
+        }
+        String value = trimFileScheme(path.trim()).replace('\\', '/');
+        if (!isAbsolutePath(value)) {
+            return trimTrailingSlash(value);
+        }
+        try {
+            return trimTrailingSlash(new File(value).getCanonicalPath().replace('\\', '/'));
+        } catch (Exception ignored) {
+            return trimTrailingSlash(value);
+        }
+    }
+
+    private static boolean isAbsolutePath(String path) {
+        return path.startsWith("/") || (path.length() > 2 && path.charAt(1) == ':');
+    }
+
+    private static String stripLeadingCurrentDir(String path) {
+        String value = path == null ? "" : path.replace('\\', '/');
+        while (value.startsWith("./")) {
+            value = value.substring(2);
+        }
+        return value;
+    }
+
+    private static String trimFileScheme(String path) {
+        return path.startsWith("file://") ? path.substring("file://".length()) : path;
+    }
+
+    private static String trimTrailingSlash(String path) {
+        String value = path == null ? "" : path;
+        while (value.length() > 1 && value.endsWith("/")) {
+            value = value.substring(0, value.length() - 1);
+        }
+        return value;
     }
 }

@@ -11,6 +11,7 @@ import android.view.Gravity;
 import android.view.View;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import cn.lineai.R;
 import cn.lineai.ssh.SshService;
 import cn.lineai.ui.theme.LineTheme;
 import java.util.regex.Pattern;
@@ -154,7 +155,11 @@ public final class TermuxIntegrationScreenView extends ScreenScaffoldView {
 
     private void setStatus(String title, String message, boolean error) {
         statusView.setVisibility(VISIBLE);
-        statusView.setText((title == null ? "" : title) + "\n" + (message == null ? "" : message));
+        statusView.setText(getResources().getString(
+                R.string.status_title_message,
+                title == null ? "" : title,
+                message == null ? "" : message
+        ));
         statusView.setTextColor(error ? LineTheme.DANGER : LineTheme.TEXT_SECONDARY);
         statusView.setBackground(LineTheme.roundedStroke(
                 getContext(),

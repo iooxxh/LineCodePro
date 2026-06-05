@@ -23,7 +23,7 @@ public final class MarkdownListBlockView extends LinearLayout {
         addView(row, rowParams);
 
         TextView markerView = LineTheme.text(context, marker == null ? "•" : marker, LineTheme.FONT_MD, LineTheme.TEXT_SECONDARY, Typeface.NORMAL);
-        markerView.setGravity(Gravity.RIGHT);
+        markerView.setGravity(Gravity.END);
         int markerWidth = Math.max(18, 22 + Math.max(0, depth) * 4);
         LinearLayout.LayoutParams markerParams = new LinearLayout.LayoutParams(LineTheme.dp(context, markerWidth), LayoutParams.WRAP_CONTENT);
         markerParams.rightMargin = LineTheme.dp(context, LineTheme.SM);

@@ -15,6 +15,7 @@ import android.widget.GridLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+import cn.lineai.R;
 import cn.lineai.model.ThemePalette;
 import cn.lineai.model.ThemeSettingsState;
 import cn.lineai.ui.theme.LineTheme;
@@ -321,7 +322,7 @@ public final class ThemeSettingsScreenView extends ScreenScaffoldView {
 
     private void refreshSwatches() {
         Context context = getContext();
-        swatchLabel.setText("当前编辑：" + labelFor(activeKey));
+        swatchLabel.setText(getResources().getString(R.string.theme_current_editing, labelFor(activeKey)));
         swatchGrid.removeAllViews();
         String activeValue = draft.get(activeKey);
         for (String value : SWATCHES) {

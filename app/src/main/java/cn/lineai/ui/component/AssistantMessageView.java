@@ -33,7 +33,7 @@ public final class AssistantMessageView extends LinearLayout {
     public AssistantMessageView(Context context) {
         super(context);
         setOrientation(VERTICAL);
-        setGravity(Gravity.LEFT);
+        setGravity(Gravity.START);
         LineTheme.padding(this, LineTheme.LG, 0, LineTheme.LG, LineTheme.MD);
 
         compactBlockView = new ContextCompactBlockView(context);

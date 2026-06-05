@@ -19,6 +19,9 @@ abstract class AbstractHttpModelProtocol implements ModelProtocol {
         void onEvent(String eventType, String data) throws Exception;
     }
 
+    protected static final class SseStreamCompleteException extends Exception {
+    }
+
     protected String postJson(String url, JSONObject body, Map<String, String> headers) throws ModelCompletionException {
         return postJson(url, body, headers, null);
     }
@@ -83,6 +86,8 @@ abstract class AbstractHttpModelProtocol implements ModelProtocol {
             }
 
             readSse(connection.getInputStream(), cancellationToken, handler);
+        } catch (SseStreamCompleteException e) {
+            return;
         } catch (ModelCompletionException e) {
             throw e;
         } catch (IOException e) {
@@ -133,32 +138,35 @@ abstract class AbstractHttpModelProtocol implements ModelProtocol {
 
     private void readSse(InputStream stream, ModelCancellationToken cancellationToken, SseEventHandler handler) throws Exception {
         BufferedReader reader = new BufferedReader(new InputStreamReader(stream, StandardCharsets.UTF_8));
-        StringBuilder data = new StringBuilder();
-        String eventType = "";
-        String line;
-        while ((cancellationToken == null || !cancellationToken.isCancelled()) && (line = reader.readLine()) != null) {
-            if (line.length() == 0) {
-                if (data.length() > 0) {
-                    handler.onEvent(eventType, data.toString());
-                    data.setLength(0);
-                    eventType = "";
+        try {
+            StringBuilder data = new StringBuilder();
+            String eventType = "";
+            String line;
+            while ((cancellationToken == null || !cancellationToken.isCancelled()) && (line = reader.readLine()) != null) {
+                if (line.length() == 0) {
+                    if (data.length() > 0) {
+                        handler.onEvent(eventType, data.toString());
+                        data.setLength(0);
+                        eventType = "";
+                    }
+                    continue;
                 }
-                continue;
-            }
-            if (line.startsWith("event:")) {
-                eventType = line.substring("event:".length()).trim();
-            } else if (line.startsWith("data:")) {
-                if (data.length() > 0) {
-                    data.append('\n');
+                if (line.startsWith("event:")) {
+                    eventType = line.substring("event:".length()).trim();
+                } else if (line.startsWith("data:")) {
+                    if (data.length() > 0) {
+                        data.append('\n');
+                    }
+                    String value = line.substring("data:".length());
+                    data.append(value.startsWith(" ") ? value.substring(1) : value);
                 }
-                String value = line.substring("data:".length());
-                data.append(value.startsWith(" ") ? value.substring(1) : value);
             }
+            if ((cancellationToken == null || !cancellationToken.isCancelled()) && data.length() > 0) {
+                handler.onEvent(eventType, data.toString());
+            }
+        } finally {
+            reader.close();
         }
-        if ((cancellationToken == null || !cancellationToken.isCancelled()) && data.length() > 0) {
-            handler.onEvent(eventType, data.toString());
-        }
-        reader.close();
     }
 
     private String readAll(InputStream stream) throws Exception {

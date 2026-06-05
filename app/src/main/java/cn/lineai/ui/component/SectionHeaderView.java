@@ -7,7 +7,7 @@ import cn.lineai.ui.theme.LineTheme;
 public final class SectionHeaderView extends TextView {
     public SectionHeaderView(Context context, String title) {
         super(context);
-        setText(title == null ? "" : title.toUpperCase());
+        setText(title == null ? "" : title.toUpperCase(java.util.Locale.ROOT));
         setTextColor(LineTheme.TEXT_TERTIARY);
         setTextSize(LineTheme.FONT_XS);
         setIncludeFontPadding(false);

@@ -6,10 +6,16 @@ public final class OutputSettings {
 
     private final boolean codeWrapEnabled;
     private final String browserMode;
+    private final boolean browserJavaScriptEnabled;
 
     public OutputSettings(boolean codeWrapEnabled, String browserMode) {
+        this(codeWrapEnabled, browserMode, true);
+    }
+
+    public OutputSettings(boolean codeWrapEnabled, String browserMode, boolean browserJavaScriptEnabled) {
         this.codeWrapEnabled = codeWrapEnabled;
         this.browserMode = normalizeBrowserMode(browserMode);
+        this.browserJavaScriptEnabled = browserJavaScriptEnabled;
     }
 
     public boolean isCodeWrapEnabled() {
@@ -18,6 +24,10 @@ public final class OutputSettings {
 
     public String getBrowserMode() {
         return browserMode;
+    }
+
+    public boolean isBrowserJavaScriptEnabled() {
+        return browserJavaScriptEnabled;
     }
 
     public static String normalizeBrowserMode(String mode) {

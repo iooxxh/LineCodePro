@@ -108,12 +108,12 @@ public final class MarkdownTableView extends HorizontalScrollView {
 
     private int gravityFor(TableCell.Alignment alignment) {
         if (alignment == TableCell.Alignment.RIGHT) {
-            return Gravity.RIGHT;
+            return Gravity.END;
         }
         if (alignment == TableCell.Alignment.CENTER) {
             return Gravity.CENTER_HORIZONTAL;
         }
-        return Gravity.LEFT;
+        return Gravity.START;
     }
 
     private int cellBackground(boolean header) {
