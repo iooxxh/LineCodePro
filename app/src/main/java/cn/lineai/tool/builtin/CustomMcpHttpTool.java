@@ -3,6 +3,7 @@ package cn.lineai.tool.builtin;
 import cn.lineai.model.ExtensionMcpConfig;
 import cn.lineai.model.McpRequestHeader;
 import cn.lineai.model.McpToolSummary;
+import cn.lineai.security.UrlPolicy;
 import cn.lineai.tool.BaseTool;
 import cn.lineai.tool.ToolCategory;
 import cn.lineai.tool.ToolContext;
@@ -62,6 +63,7 @@ public final class CustomMcpHttpTool extends BaseTool {
 
     @Override
     public ToolResult execute(JSONObject input, ToolContext context) {
+        HttpURLConnection connection = null;
         try {
             JSONObject body = new JSONObject()
                     .put("jsonrpc", "2.0")
@@ -70,7 +72,7 @@ public final class CustomMcpHttpTool extends BaseTool {
                     .put("params", new JSONObject()
                             .put("name", tool.getName())
                             .put("arguments", input == null ? new JSONObject() : input));
-            HttpURLConnection connection = (HttpURLConnection) new URL(mcp.getUrl()).openConnection();
+            connection = (HttpURLConnection) new URL(UrlPolicy.requireHttpOrLocalCleartextUrl(mcp.getUrl(), "MCP 地址")).openConnection();
             connection.setConnectTimeout(15000);
             connection.setReadTimeout(60000);
             connection.setRequestMethod("POST");
@@ -91,6 +93,10 @@ public final class CustomMcpHttpTool extends BaseTool {
             return parseResult(text);
         } catch (Exception e) {
             return error("自定义 MCP 调用失败: " + e.getMessage());
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
         }
     }
 
@@ -152,13 +158,17 @@ public final class CustomMcpHttpTool extends BaseTool {
         if (input == null) {
             return "";
         }
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        byte[] buffer = new byte[8192];
-        int read;
-        while ((read = input.read(buffer)) != -1) {
-            output.write(buffer, 0, read);
+        try {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+            return output.toString(StandardCharsets.UTF_8.name());
+        } finally {
+            input.close();
         }
-        return output.toString(StandardCharsets.UTF_8.name());
     }
 
     private ToolResult ok(String content) {

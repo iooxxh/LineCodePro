@@ -1,4 +1,5 @@
 import java.util.Properties
+import org.gradle.api.GradleException
 
 plugins {
     alias(libs.plugins.android.application)
@@ -9,10 +10,15 @@ val releaseApkName = "LineCode Pro $releaseVersionName.APK"
 val releaseIdsigName = "$releaseApkName.idsig"
 val releaseSigningProperties = Properties()
 val releaseSigningFile = rootProject.file("signing.properties")
-val hasReleaseSigning = releaseSigningFile.exists()
-if (hasReleaseSigning) {
+val hasReleaseSigningFile = releaseSigningFile.exists()
+if (hasReleaseSigningFile) {
     releaseSigningFile.inputStream().use { releaseSigningProperties.load(it) }
 }
+val requiredReleaseSigningProperties = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+val missingReleaseSigningProperties = requiredReleaseSigningProperties.filter {
+    releaseSigningProperties.getProperty(it).isNullOrBlank()
+}
+val hasReleaseSigning = hasReleaseSigningFile && missingReleaseSigningProperties.isEmpty()
 
 val generateReleaseObfuscationDictionary by tasks.registering {
     val outputFile = layout.buildDirectory.file("generated/r8/obfuscation-dictionary.txt")
@@ -79,6 +85,17 @@ val exportReleaseApk by tasks.registering(Copy::class) {
     }
 }
 
+val validateReleaseSigning by tasks.registering {
+    doLast {
+        if (!hasReleaseSigningFile) {
+            throw GradleException("Release signing.properties is required for release builds. Debug signing must not be used for release artifacts.")
+        }
+        if (missingReleaseSigningProperties.isNotEmpty()) {
+            throw GradleException("Release signing.properties is missing: ${missingReleaseSigningProperties.joinToString(", ")}")
+        }
+    }
+}
+
 android {
     namespace = "cn.lineai"
     compileSdk {
@@ -117,10 +134,8 @@ android {
 
     buildTypes {
         release {
-            signingConfig = if (hasReleaseSigning) {
-                signingConfigs.getByName("lineAiRelease")
-            } else {
-                signingConfigs.getByName("debug")
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("lineAiRelease")
             }
             isDebuggable = false
             isMinifyEnabled = true
@@ -154,6 +169,12 @@ tasks.matching {
     it.name == "minifyReleaseWithR8" || it.name == "minifyReleaseWithProguard"
 }.configureEach {
     dependsOn(generateReleaseObfuscationDictionary)
+}
+
+tasks.matching {
+    it.name == "assembleRelease" || it.name == "bundleRelease"
+}.configureEach {
+    dependsOn(validateReleaseSigning)
 }
 
 tasks.matching {

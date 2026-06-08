@@ -33,6 +33,7 @@ import cn.lineai.model.ModelProviderPresets;
 import cn.lineai.model.SheetOption;
 import cn.lineai.mvp.MainContract;
 import cn.lineai.mvp.MainUiController;
+import cn.lineai.security.UrlPolicy;
 import cn.lineai.ui.component.BottomSheetView;
 import cn.lineai.ui.component.AttachmentPickerSheetView;
 import cn.lineai.ui.component.ChatMessageListView;
@@ -615,7 +616,7 @@ public final class MainChatView extends FrameLayout implements MainContract.View
 
     @Override
     public void openExternalUrl(String url) {
-        String safeUrl = url == null ? "" : url.trim();
+        String safeUrl = UrlPolicy.normalizeHttpOrHttpsUrl(url);
         if (safeUrl.length() == 0) {
             return;
         }

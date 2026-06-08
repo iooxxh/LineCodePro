@@ -12,6 +12,7 @@ import cn.lineai.model.ExtensionOverviewState;
 import cn.lineai.model.McpRequestHeader;
 import cn.lineai.model.McpToolSummary;
 import cn.lineai.model.SkillRecord;
+import cn.lineai.security.UrlPolicy;
 import cn.lineai.workspace.WorkspacePaths;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -193,30 +194,37 @@ public final class ExtensionRepository {
                 .put("id", "linecode_" + System.currentTimeMillis())
                 .put("method", "tools/list")
                 .put("params", new JSONObject());
-        HttpURLConnection connection = (HttpURLConnection) new URL(endpoint).openConnection();
-        connection.setConnectTimeout(15000);
-        connection.setReadTimeout(30000);
-        connection.setRequestMethod("POST");
-        connection.setDoOutput(true);
-        connection.setRequestProperty("Accept", "application/json, text/event-stream");
-        connection.setRequestProperty("Content-Type", "application/json");
-        for (McpRequestHeader header : headers == null ? Collections.<McpRequestHeader>emptyList() : headers) {
-            if (header.getName().length() > 0) {
-                connection.setRequestProperty(header.getName(), header.getValue());
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(endpoint).openConnection();
+            connection.setConnectTimeout(15000);
+            connection.setReadTimeout(30000);
+            connection.setRequestMethod("POST");
+            connection.setDoOutput(true);
+            connection.setRequestProperty("Accept", "application/json, text/event-stream");
+            connection.setRequestProperty("Content-Type", "application/json");
+            for (McpRequestHeader header : headers == null ? Collections.<McpRequestHeader>emptyList() : headers) {
+                if (header.getName().length() > 0) {
+                    connection.setRequestProperty(header.getName(), header.getValue());
+                }
+            }
+            byte[] bytes = body.toString().getBytes(StandardCharsets.UTF_8);
+            connection.getOutputStream().write(bytes);
+            int code = connection.getResponseCode();
+            String text = readStream(code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream());
+            if (code < 200 || code >= 300) {
+                throw new IllegalStateException(code + ": " + text);
+            }
+            List<McpToolSummary> tools = parseMcpToolResponse(text);
+            if (tools.isEmpty()) {
+                throw new IllegalStateException("没有在 MCP 响应中找到 tools 列表。");
+            }
+            return tools;
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
             }
         }
-        byte[] bytes = body.toString().getBytes(StandardCharsets.UTF_8);
-        connection.getOutputStream().write(bytes);
-        int code = connection.getResponseCode();
-        String text = readStream(code >= 200 && code < 300 ? connection.getInputStream() : connection.getErrorStream());
-        if (code < 200 || code >= 300) {
-            throw new IllegalStateException(code + ": " + text);
-        }
-        List<McpToolSummary> tools = parseMcpToolResponse(text);
-        if (tools.isEmpty()) {
-            throw new IllegalStateException("没有在 MCP 响应中找到 tools 列表。");
-        }
-        return tools;
     }
 
     public synchronized List<SkillRecord> getSkills(String homePath) {
@@ -807,10 +815,7 @@ public final class ExtensionRepository {
     }
 
     private String normalizeHttpUrl(String raw) {
-        String value = safe(raw).trim();
-        if (!value.startsWith("http://") && !value.startsWith("https://")) {
-            throw new IllegalArgumentException("MCP 地址必须以 http:// 或 https:// 开头。");
-        }
+        String value = UrlPolicy.requireHttpOrLocalCleartextUrl(raw, "MCP 地址");
         while (value.endsWith("/") && value.length() > "https://x".length()) {
             value = value.substring(0, value.length() - 1);
         }
@@ -1027,13 +1032,17 @@ public final class ExtensionRepository {
         if (input == null) {
             return "";
         }
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        byte[] buffer = new byte[8192];
-        int read;
-        while ((read = input.read(buffer)) != -1) {
-            output.write(buffer, 0, read);
+        try {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+            return output.toString(StandardCharsets.UTF_8.name());
+        } finally {
+            input.close();
         }
-        return output.toString(StandardCharsets.UTF_8.name());
     }
 
     private String readUtf8(File file, int maxChars) {

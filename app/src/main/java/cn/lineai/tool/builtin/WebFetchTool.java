@@ -16,7 +16,7 @@ public final class WebFetchTool extends BaseTool {
 
     @Override
     public String getDescription() {
-        return "查看并提取指定网页的文本内容。URL 必须以 http:// 或 https:// 开头。";
+        return "查看并提取指定网页的文本内容。URL 必须使用 HTTPS，或使用 localhost/127.0.0.1/10.0.2.2 的 HTTP。";
     }
 
     @Override

@@ -2,6 +2,7 @@ package cn.lineai.ai.protocol;
 
 import cn.lineai.ai.ModelCompletionException;
 import cn.lineai.model.ModelProtocolType;
+import cn.lineai.security.UrlPolicy;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -58,7 +59,9 @@ public final class ModelCatalogClient {
     }
 
     private HttpURLConnection openGet(String url) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        HttpURLConnection connection = (HttpURLConnection) new URL(
+                UrlPolicy.requireHttpOrLocalCleartextUrl(url, "模型 API 地址")
+        ).openConnection();
         connection.setRequestMethod("GET");
         connection.setConnectTimeout(20000);
         connection.setReadTimeout(30000);

@@ -7,6 +7,7 @@ import cn.lineai.tool.builtin.GlobTool;
 import cn.lineai.tool.builtin.AgentTool;
 import cn.lineai.tool.builtin.AgentPipelineTool;
 import cn.lineai.tool.builtin.WebSearchTool;
+import cn.lineai.tool.builtin.WebFetchTool;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -102,6 +103,14 @@ public final class ToolBuiltinsTest {
 
         Assert.assertTrue(result.isError());
         Assert.assertTrue(result.getContent().contains("网页搜索未配置"));
+    }
+
+    @Test
+    public void webFetchRejectsRemoteCleartextHttp() throws Exception {
+        ToolResult result = new WebFetchTool().execute(new JSONObject().put("url", "http://example.com"), context());
+
+        Assert.assertTrue(result.isError());
+        Assert.assertTrue(result.getContent().contains("HTTP 明文"));
     }
 
     @Test

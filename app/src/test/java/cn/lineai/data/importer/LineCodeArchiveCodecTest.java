@@ -90,6 +90,7 @@ public final class LineCodeArchiveCodecTest {
         assertTrue(new File(payload, LineCodeArchiveCodec.ENTRY_MANIFEST).isFile());
         assertTrue(new File(payload, LineCodeArchiveCodec.ENTRY_ASYNC_STORAGE).isFile());
         assertEquals("m1", restoredData.getSelectedModelId());
+        assertEquals("", restoredData.getModels().get(0).getApiKey());
         assertEquals("agent", restoredData.getSettings().get("@linecode_chat_mode"));
         assertEquals(1, restoredData.getConversations().size());
         assertEquals("你好", restoredData.getConversations().get(0).getMessages().get(0).getContent());

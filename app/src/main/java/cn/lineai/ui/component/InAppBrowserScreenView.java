@@ -5,10 +5,15 @@ import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
 import android.graphics.Typeface;
+import android.os.Build;
 import android.view.Gravity;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import cn.lineai.security.UrlPolicy;
 import cn.lineai.ui.theme.LineTheme;
 
 public final class InAppBrowserScreenView extends LinearLayout {
@@ -59,9 +64,24 @@ public final class InAppBrowserScreenView extends LinearLayout {
 
         WebView webView = new WebView(context);
         webView.setBackgroundColor(LineTheme.BG);
+        webView.setContentDescription("网页内容");
+        hardenWebView(webView);
         setJavaScriptEnabled(webView, javaScriptEnabled);
         webView.getSettings().setDomStorageEnabled(true);
-        String safeUrl = safeHttpUrl(url);
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
+                String nextUrl = request == null || request.getUrl() == null ? "" : request.getUrl().toString();
+                return UrlPolicy.normalizeHttpOrLocalCleartextUrl(nextUrl).length() == 0;
+            }
+
+            @Override
+            @SuppressWarnings("deprecation")
+            public boolean shouldOverrideUrlLoading(WebView view, String nextUrl) {
+                return UrlPolicy.normalizeHttpOrLocalCleartextUrl(nextUrl).length() == 0;
+            }
+        });
+        String safeUrl = UrlPolicy.normalizeHttpOrLocalCleartextUrl(url);
         if (safeUrl.length() > 0) {
             webView.loadUrl(safeUrl);
         } else {
@@ -75,9 +95,16 @@ public final class InAppBrowserScreenView extends LinearLayout {
         webView.getSettings().setJavaScriptEnabled(enabled);
     }
 
-    private static String safeHttpUrl(String url) {
-        String value = url == null ? "" : url.trim();
-        String lower = value.toLowerCase(java.util.Locale.ROOT);
-        return lower.startsWith("https://") || lower.startsWith("http://") ? value : "";
+    private static void hardenWebView(WebView webView) {
+        WebSettings settings = webView.getSettings();
+        settings.setAllowFileAccess(false);
+        settings.setAllowContentAccess(false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+            settings.setAllowFileAccessFromFileURLs(false);
+            settings.setAllowUniversalAccessFromFileURLs(false);
+        }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
+        }
     }
 }

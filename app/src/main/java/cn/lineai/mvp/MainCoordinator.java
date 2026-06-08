@@ -63,6 +63,7 @@ import cn.lineai.model.SkillRecord;
 import cn.lineai.model.SshConfig;
 import cn.lineai.model.ThemeSettingsState;
 import cn.lineai.model.WebSearchConfig;
+import cn.lineai.security.UrlPolicy;
 import cn.lineai.ssh.SshService;
 import cn.lineai.tool.BaseTool;
 import cn.lineai.tool.ToolCall;
@@ -1605,7 +1606,7 @@ public final class MainCoordinator implements MainUiController {
 
     @Override
     public void onOpenUrl(String url) {
-        String safeUrl = url == null ? "" : url.trim();
+        String safeUrl = UrlPolicy.normalizeHttpOrHttpsUrl(url);
         if (safeUrl.length() == 0) {
             return;
         }

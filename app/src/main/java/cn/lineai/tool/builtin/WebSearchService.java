@@ -1,6 +1,7 @@
 package cn.lineai.tool.builtin;
 
 import cn.lineai.model.WebSearchConfig;
+import cn.lineai.security.UrlPolicy;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -37,11 +38,9 @@ final class WebSearchService {
 
     String fetchPage(String url, int maxChars) throws Exception {
         String trimmedUrl = url == null ? "" : url.trim();
-        if (!trimmedUrl.startsWith("http://") && !trimmedUrl.startsWith("https://")) {
-            throw new IllegalArgumentException("URL 必须以 http:// 或 https:// 开头。");
-        }
+        String safeUrl = UrlPolicy.requireHttpOrLocalCleartextUrl(trimmedUrl, "URL");
         int limit = Math.max(1000, Math.min(maxChars <= 0 ? 12000 : maxChars, 30000));
-        HttpRequest request = new HttpRequest(trimmedUrl, "GET", null);
+        HttpRequest request = new HttpRequest(safeUrl, "GET", null);
         request.headers.put("Accept", "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.6");
         request.headers.put("User-Agent", "LineCode/1.0");
         HttpResponse response = request(request);
@@ -163,28 +162,36 @@ final class WebSearchService {
     }
 
     private HttpResponse request(HttpRequest request) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL(request.url).openConnection();
-        connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
-        connection.setReadTimeout(READ_TIMEOUT_MS);
-        connection.setInstanceFollowRedirects(true);
-        connection.setRequestMethod(request.method);
-        for (Map.Entry<String, String> entry : request.headers.entrySet()) {
-            connection.setRequestProperty(entry.getKey(), entry.getValue());
-        }
-        if (request.body != null) {
-            connection.setDoOutput(true);
-            byte[] bytes = request.body.getBytes(StandardCharsets.UTF_8);
-            connection.setFixedLengthStreamingMode(bytes.length);
-            OutputStream output = connection.getOutputStream();
-            try {
-                output.write(bytes);
-            } finally {
-                output.close();
+        String safeUrl = UrlPolicy.requireHttpOrLocalCleartextUrl(request.url, "URL");
+        HttpURLConnection connection = null;
+        try {
+            connection = (HttpURLConnection) new URL(safeUrl).openConnection();
+            connection.setConnectTimeout(CONNECT_TIMEOUT_MS);
+            connection.setReadTimeout(READ_TIMEOUT_MS);
+            connection.setInstanceFollowRedirects(true);
+            connection.setRequestMethod(request.method);
+            for (Map.Entry<String, String> entry : request.headers.entrySet()) {
+                connection.setRequestProperty(entry.getKey(), entry.getValue());
+            }
+            if (request.body != null) {
+                connection.setDoOutput(true);
+                byte[] bytes = request.body.getBytes(StandardCharsets.UTF_8);
+                connection.setFixedLengthStreamingMode(bytes.length);
+                OutputStream output = connection.getOutputStream();
+                try {
+                    output.write(bytes);
+                } finally {
+                    output.close();
+                }
+            }
+            int code = connection.getResponseCode();
+            InputStream stream = code >= 400 ? connection.getErrorStream() : connection.getInputStream();
+            return new HttpResponse(code, connection.getResponseMessage(), safe(connection.getContentType()), read(stream));
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
             }
         }
-        int code = connection.getResponseCode();
-        InputStream stream = code >= 400 ? connection.getErrorStream() : connection.getInputStream();
-        return new HttpResponse(code, connection.getResponseMessage(), safe(connection.getContentType()), read(stream));
     }
 
     private String read(InputStream input) throws Exception {

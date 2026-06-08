@@ -9,7 +9,7 @@ public final class OutputSettings {
     private final boolean browserJavaScriptEnabled;
 
     public OutputSettings(boolean codeWrapEnabled, String browserMode) {
-        this(codeWrapEnabled, browserMode, true);
+        this(codeWrapEnabled, browserMode, false);
     }
 
     public OutputSettings(boolean codeWrapEnabled, String browserMode, boolean browserJavaScriptEnabled) {

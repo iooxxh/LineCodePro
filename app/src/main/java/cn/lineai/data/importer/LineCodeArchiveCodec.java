@@ -44,11 +44,13 @@ public final class LineCodeArchiveCodec {
     ) throws Exception {
         ZipOutputStream zip = new ZipOutputStream(new BufferedOutputStream(rawOutput));
         try {
+            ImportedLineCodeData exportData = ArchiveSecretRedactor.redactData(data);
+            JSONObject exportDatabaseSnapshot = ArchiveSecretRedactor.redactDatabaseSnapshot(databaseSnapshot);
             LinkedHashMap<String, String> conversationFiles = new LinkedHashMap<>();
-            JSONArray asyncStorage = buildAsyncStorageEntries(data, conversationFiles);
-            putUtf8(zip, ENTRY_MANIFEST, manifest(databaseSnapshot != null).toString(2));
-            if (databaseSnapshot != null) {
-                putUtf8(zip, ENTRY_DATABASE, databaseSnapshot.toString(2));
+            JSONArray asyncStorage = buildAsyncStorageEntries(exportData, conversationFiles);
+            putUtf8(zip, ENTRY_MANIFEST, manifest(exportDatabaseSnapshot != null).toString(2));
+            if (exportDatabaseSnapshot != null) {
+                putUtf8(zip, ENTRY_DATABASE, exportDatabaseSnapshot.toString(2));
             }
             putUtf8(zip, ENTRY_ASYNC_STORAGE, asyncStorage.toString(2));
             for (Map.Entry<String, String> entry : conversationFiles.entrySet()) {

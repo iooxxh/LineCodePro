@@ -18,7 +18,7 @@ public final class OutputSettingsRepository {
         return new OutputSettings(
                 settingsRepository.getBoolean(KEY_CODE_WRAP, false),
                 settingsRepository.getString(KEY_BROWSER_MODE, OutputSettings.BROWSER_BUILTIN),
-                settingsRepository.getBoolean(KEY_BROWSER_JAVASCRIPT, true)
+                settingsRepository.getBoolean(KEY_BROWSER_JAVASCRIPT, false)
         );
     }
 

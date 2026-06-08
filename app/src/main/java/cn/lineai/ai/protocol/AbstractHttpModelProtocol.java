@@ -2,6 +2,7 @@ package cn.lineai.ai.protocol;
 
 import cn.lineai.ai.ModelCompletionException;
 import cn.lineai.ai.ModelCancellationToken;
+import cn.lineai.security.UrlPolicy;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -116,7 +117,9 @@ abstract class AbstractHttpModelProtocol implements ModelProtocol {
     }
 
     private HttpURLConnection openJsonPost(String url, JSONObject body, Map<String, String> headers, String accept) throws Exception {
-        HttpURLConnection connection = (HttpURLConnection) new URL(url).openConnection();
+        HttpURLConnection connection = (HttpURLConnection) new URL(
+                UrlPolicy.requireHttpOrLocalCleartextUrl(url, "模型 API 地址")
+        ).openConnection();
         connection.setRequestMethod("POST");
         connection.setConnectTimeout(20000);
         connection.setReadTimeout(120000);
