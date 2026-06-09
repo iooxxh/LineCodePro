@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import cn.lineai.ai.ModelCompletionResponse;
+import cn.lineai.ai.ImageInputPayload;
 import cn.lineai.ai.ModelRequestOptions;
 import cn.lineai.ai.ModelStreamCallback;
 import cn.lineai.ai.message.AssistantModelMessage;
@@ -59,6 +60,23 @@ public final class CodexResponsesProtocolTest {
         assertEquals("function_call_output", input.getJSONObject(2).getString("type"));
         assertEquals("call_1", input.getJSONObject(2).getString("call_id"));
         assertEquals("README content", input.getJSONObject(2).getString("output"));
+    }
+
+    @Test
+    public void responsesInputBuilderFormatsVisionRawInput() throws Exception {
+        ArrayList<ModelMessage> messages = new ArrayList<>();
+        messages.add(new UserModelMessage("fallback", ImageInputPayload.rawInputJson("描述图片", "image/png", "abc123")));
+
+        JSONArray input = ResponsesInputBuilder.inputJson(messages);
+
+        JSONObject message = input.getJSONObject(0);
+        assertEquals("message", message.getString("type"));
+        assertEquals("user", message.getString("role"));
+        JSONArray content = message.getJSONArray("content");
+        assertEquals("input_text", content.getJSONObject(0).getString("type"));
+        assertEquals("描述图片", content.getJSONObject(0).getString("text"));
+        assertEquals("input_image", content.getJSONObject(1).getString("type"));
+        assertEquals("data:image/png;base64,abc123", content.getJSONObject(1).getString("image_url"));
     }
 
     @Test

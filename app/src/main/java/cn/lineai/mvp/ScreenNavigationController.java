@@ -113,6 +113,7 @@ public final class ScreenNavigationController {
                 || "models".equals(safeScreenId)
                 || "extensions".equals(safeScreenId)
                 || "mcp".equals(safeScreenId)
+                || "toolSettings".equals(safeScreenId)
                 || "output".equals(safeScreenId)
                 || "theme".equals(safeScreenId)
                 || "experimental".equals(safeScreenId)
@@ -123,8 +124,12 @@ public final class ScreenNavigationController {
                 || "about".equals(safeScreenId)) {
             return "settings";
         }
-        if ("sshSettings".equals(safeScreenId) || "termuxIntegration".equals(safeScreenId)) {
+        if ("sshSettings".equals(safeScreenId)
+                || "termuxIntegration".equals(safeScreenId)) {
             return "mcp";
+        }
+        if ("imageUnderstandingModel".equals(safeScreenId)) {
+            return "toolSettings";
         }
         if ("promptTemplates".equals(safeScreenId)) {
             return "llm";

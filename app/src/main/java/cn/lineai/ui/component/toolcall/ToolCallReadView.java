@@ -78,6 +78,7 @@ public final class ToolCallReadView extends LinearLayout {
     }
 
     private String actionLabel(String name) {
+        if ("image_understanding".equals(name)) return "图片理解";
         if ("web_search".equals(name)) return "搜索";
         if ("web_fetch".equals(name)) return "抓取";
         if ("glob".equals(name)) return "匹配";
@@ -94,6 +95,9 @@ public final class ToolCallReadView extends LinearLayout {
         }
         if ("list_dir".equals(name)) {
             return IconButtonView.FOLDER_OPEN;
+        }
+        if ("image_understanding".equals(name)) {
+            return IconButtonView.PAINTBRUSH;
         }
         return IconButtonView.EXPAND;
     }

@@ -1,5 +1,6 @@
 package cn.lineai.ai.protocol;
 
+import cn.lineai.ai.ImageInputPayload;
 import cn.lineai.ai.message.ModelMessage;
 import cn.lineai.tool.ToolCall;
 import java.util.List;
@@ -76,6 +77,11 @@ final class ResponsesInputBuilder {
             return false;
         }
         String raw = rawInputJson.trim();
+        ImageInputPayload.Payload imagePayload = ImageInputPayload.fromRawInputJson(raw);
+        if (imagePayload != null) {
+            appendImageMessage(target, imagePayload);
+            return true;
+        }
         if (raw.startsWith("[")) {
             JSONArray items = new JSONArray(raw);
             for (int i = 0; i < items.length(); i++) {
@@ -88,6 +94,19 @@ final class ResponsesInputBuilder {
         }
         target.put(new JSONObject(raw));
         return true;
+    }
+
+    private static void appendImageMessage(JSONArray target, ImageInputPayload.Payload payload) throws Exception {
+        target.put(new JSONObject()
+                .put("type", "message")
+                .put("role", "user")
+                .put("content", new JSONArray()
+                        .put(new JSONObject()
+                                .put("type", "input_text")
+                                .put("text", payload.getPrompt()))
+                        .put(new JSONObject()
+                                .put("type", "input_image")
+                                .put("image_url", payload.dataUrl()))));
     }
 
     private static JSONObject toolOutputItem(ModelMessage message) throws Exception {

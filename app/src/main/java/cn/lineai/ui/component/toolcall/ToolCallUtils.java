@@ -87,7 +87,8 @@ final class ToolCallUtils {
 
     static boolean isReadTool(String name) {
         return "file_read".equals(name) || "glob".equals(name) || "list_dir".equals(name)
-                || "web_search".equals(name) || "web_fetch".equals(name);
+                || "web_search".equals(name) || "web_fetch".equals(name)
+                || "image_understanding".equals(name);
     }
 
     static boolean isWriteTool(String name) {

@@ -51,6 +51,17 @@ public final class ScreenNavigationControllerTest {
         Assert.assertFalse(host.chatShown);
     }
 
+    @Test
+    public void imageUnderstandingModelBackReturnsToToolSettings() {
+        ScreenNavigationController controller = new ScreenNavigationController();
+        RecordingHost host = new RecordingHost();
+
+        controller.backFrom("imageUnderstandingModel", host);
+
+        Assert.assertEquals("toolSettings", host.lastScreenId);
+        Assert.assertFalse(host.chatShown);
+    }
+
     private static final class RecordingHost implements ScreenNavigationController.Host {
         private String lastScreenId = "";
         private boolean chatShown;

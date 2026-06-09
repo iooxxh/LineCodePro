@@ -35,15 +35,30 @@ public final class ModelListScreenView extends LinearLayout {
     private final ArrayList<ModelConfig> models;
     private final String selectedModelId;
     private final Listener listener;
+    private final String title;
+    private final boolean allowManagement;
     private final FrameLayout headerHost;
     private final LinearLayout list;
     private final Set<String> multiSelectedIds = new HashSet<>();
 
     public ModelListScreenView(Context context, List<ModelConfig> models, String selectedModelId, Listener listener) {
+        this(context, models, selectedModelId, "模型", true, listener);
+    }
+
+    public ModelListScreenView(
+            Context context,
+            List<ModelConfig> models,
+            String selectedModelId,
+            String title,
+            boolean allowManagement,
+            Listener listener
+    ) {
         super(context);
         this.models = new ArrayList<>(models == null ? new ArrayList<>() : models);
         this.selectedModelId = selectedModelId == null ? "" : selectedModelId;
         this.listener = listener;
+        this.title = title == null || title.length() == 0 ? "模型" : title;
+        this.allowManagement = allowManagement;
         setOrientation(VERTICAL);
         setBackgroundColor(LineTheme.BG);
 
@@ -85,12 +100,15 @@ public final class ModelListScreenView extends LinearLayout {
             return;
         }
 
-        IconButtonView add = new IconButtonView(context, IconButtonView.PLUS);
-        add.setIconColor(LineTheme.TEXT);
-        add.setIconSizeDp(36, 20);
-        add.setOnClickListener(v -> listener.onAddModel());
+        IconButtonView add = null;
+        if (allowManagement) {
+            add = new IconButtonView(context, IconButtonView.PLUS);
+            add.setIconColor(LineTheme.TEXT);
+            add.setIconSizeDp(36, 20);
+            add.setOnClickListener(v -> listener.onAddModel());
+        }
         headerHost.addView(
-                new ScreenHeaderView(context, "模型", listener::onBack, add),
+                new ScreenHeaderView(context, title, listener::onBack, add),
                 new FrameLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT)
         );
     }
@@ -99,7 +117,10 @@ public final class ModelListScreenView extends LinearLayout {
         Context context = getContext();
         list.removeAllViews();
         if (models.isEmpty()) {
-            TextView empty = LineTheme.text(context, "还没有模型。点击右上角 + 添加 OpenAI 兼容、Codex 或 Anthropic 模型。", LineTheme.FONT_SM, LineTheme.TEXT_TERTIARY, Typeface.NORMAL);
+            String emptyText = allowManagement
+                    ? "还没有模型。点击右上角 + 添加 OpenAI 兼容、Codex 或 Anthropic 模型。"
+                    : "还没有模型。请先在模型管理中添加 OpenAI 兼容、Codex 或 Anthropic 模型。";
+            TextView empty = LineTheme.text(context, emptyText, LineTheme.FONT_SM, LineTheme.TEXT_TERTIARY, Typeface.NORMAL);
             empty.setLineSpacing(LineTheme.dp(context, 3), 1f);
             list.addView(empty, new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.WRAP_CONTENT));
             return;
@@ -124,6 +145,9 @@ public final class ModelListScreenView extends LinearLayout {
             listener.onSelectModel(model.getId());
         });
         card.setOnLongClickListener(v -> {
+            if (!allowManagement) {
+                return true;
+            }
             if (!multiSelectedIds.isEmpty()) {
                 toggleMultiSelected(model.getId());
             } else {

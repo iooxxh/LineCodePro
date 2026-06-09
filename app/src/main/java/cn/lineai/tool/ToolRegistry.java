@@ -16,6 +16,7 @@ import cn.lineai.tool.builtin.FileReadTool;
 import cn.lineai.tool.builtin.FileWriteTool;
 import cn.lineai.tool.builtin.GlobTool;
 import cn.lineai.tool.builtin.HttpServerTool;
+import cn.lineai.tool.builtin.ImageUnderstandingTool;
 import cn.lineai.tool.builtin.ListDirectoryTool;
 import cn.lineai.tool.builtin.ShellExecuteTool;
 import cn.lineai.tool.builtin.WebFetchTool;
@@ -51,6 +52,7 @@ public final class ToolRegistry {
         register(new AgentTool());
         register(new AgentPipelineTool());
         register(new ShellExecuteTool(context));
+        register(new ImageUnderstandingTool(context));
         register(new WebSearchTool(context == null ? null : new WebSearchConfigRepository(context)));
         register(new WebFetchTool());
         reloadExtensions();

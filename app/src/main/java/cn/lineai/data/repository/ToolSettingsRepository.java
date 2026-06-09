@@ -19,6 +19,7 @@ import java.util.Set;
 public final class ToolSettingsRepository {
     public static final String KEY_PERMISSION_MODE = "@lineai_permission_mode";
     public static final String KEY_MCP_EXECUTION_MODE = "@lineai_mcp_execution_mode";
+    public static final String KEY_IMAGE_UNDERSTANDING_MODEL_ID = "@lineai_image_understanding_model_id";
     private static final String KEY_MCP_PREFIX = "@linecode_mcp_enabled_";
 
     public static final String PERMISSION_READONLY = "readonly";
@@ -34,6 +35,8 @@ public final class ToolSettingsRepository {
                     new String[] {"http_server"}),
             new McpToolConfig("agent", "Agent", "分派 Agent 处理任务", true,
                     new String[] {"agent", "agent_pipeline"}),
+            new McpToolConfig("image_understanding", "图片理解", "读取本地图片并调用已选择的视觉模型理解内容", false,
+                    new String[] {"image_understanding"}),
             new McpToolConfig("shell", "SSH Shell", "通过 SSH 执行 shell 命令", true,
                     new String[] {"shell_execute"}),
             new McpToolConfig("web_search", "网页搜索", "搜索互联网并查看网页内容", false,
@@ -74,7 +77,12 @@ public final class ToolSettingsRepository {
     }
 
     public synchronized McpSettingsState getMcpSettingsState() {
-        return new McpSettingsState(getExecutionMode(), getConfigs(), webSearchConfigRepository.get());
+        return new McpSettingsState(
+                getExecutionMode(),
+                getConfigs(),
+                webSearchConfigRepository.get(),
+                getImageUnderstandingModelId()
+        );
     }
 
     public synchronized WebSearchConfig getWebSearchConfig() {
@@ -83,6 +91,14 @@ public final class ToolSettingsRepository {
 
     public synchronized void setWebSearchConfig(WebSearchConfig config) {
         webSearchConfigRepository.save(config);
+    }
+
+    public synchronized String getImageUnderstandingModelId() {
+        return settingsRepository.getString(KEY_IMAGE_UNDERSTANDING_MODEL_ID, "").trim();
+    }
+
+    public synchronized void setImageUnderstandingModelId(String modelId) {
+        settingsRepository.setString(KEY_IMAGE_UNDERSTANDING_MODEL_ID, modelId == null ? "" : modelId.trim());
     }
 
     public synchronized void setMcpEnabled(String id, boolean enabled) {
@@ -383,7 +399,8 @@ public final class ToolSettingsRepository {
 
     public static ToolCategory getToolCategory(String toolName) {
         if ("file_read".equals(toolName) || "glob".equals(toolName) || "list_dir".equals(toolName)
-                || "web_search".equals(toolName) || "web_fetch".equals(toolName)) {
+                || "web_search".equals(toolName) || "web_fetch".equals(toolName)
+                || "image_understanding".equals(toolName)) {
             return ToolCategory.READ;
         }
         if ("file_write".equals(toolName) || "file_edit".equals(toolName) || "file_delete".equals(toolName)) {

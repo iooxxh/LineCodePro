@@ -13,6 +13,13 @@ public final class ToolRegistryTest {
     }
 
     @Test
+    public void registersImageUnderstandingTool() {
+        ToolRegistry registry = new ToolRegistry();
+
+        Assert.assertNotNull(registry.get("image_understanding"));
+    }
+
+    @Test
     public void registersAgentTools() {
         ToolRegistry registry = new ToolRegistry();
 

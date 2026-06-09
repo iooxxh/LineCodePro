@@ -24,6 +24,7 @@ import cn.lineai.data.repository.AiBehaviorSettingsRepository;
 import cn.lineai.data.repository.ChatModeRepository;
 import cn.lineai.data.repository.ConversationRecord;
 import cn.lineai.data.repository.ConversationRepository;
+import cn.lineai.data.repository.DiffRecord;
 import cn.lineai.data.repository.DiffRepository;
 import cn.lineai.data.repository.ExtensionRepository;
 import cn.lineai.data.repository.FileTreeRepository;
@@ -1487,9 +1488,14 @@ public final class MainCoordinator implements MainUiController {
             if (resolvedDiffId.length() > 0) {
                 String targetDiffId = resolvedDiffId;
                 backgroundTasks.execute("linecode-diff-revert", () -> {
+                    DiffRecord diffRecord = diffRepository.getDiff(targetDiffId);
                     DiffRepository.RevertResult result = diffRepository.revertDiff(targetDiffId);
+                    String filePath = diffRecord == null ? "" : diffRecord.getFilePath();
                     mainThread.post(() -> {
                         updateToolReview(toolCallId, targetDiffId, result.isSuccess() ? "rejected" : "", result.getMessage());
+                        if (result.isSuccess()) {
+                            refreshFileTreeAfterRevert(filePath);
+                        }
                         persistCurrentConversation();
                         render();
                     });
@@ -1766,6 +1772,18 @@ public final class MainCoordinator implements MainUiController {
     @Override
     public void onMcpWebSearchConfigChanged(WebSearchConfig config) {
         toolSettingsRepository.setWebSearchConfig(config);
+    }
+
+    @Override
+    public String getImageUnderstandingModelId() {
+        return toolSettingsRepository.getImageUnderstandingModelId();
+    }
+
+    @Override
+    public void onImageUnderstandingModelSelected(String id) {
+        toolSettingsRepository.setImageUnderstandingModelId(id);
+        returnToScreen("toolSettings");
+        render();
     }
 
     @Override
@@ -4655,23 +4673,206 @@ public final class MainCoordinator implements MainUiController {
     }
 
     private String findToolMessageDiffId(String toolCallId) {
+        if (toolCallId == null || toolCallId.length() == 0) {
+            return "";
+        }
         for (ChatMessage message : messages) {
             if (message.getRole() == ChatMessage.Role.TOOL
                     && toolCallId.equals(message.getToolCallId())
                     && message.getDiffId().length() > 0) {
                 return message.getDiffId();
             }
+            if (message.getRole() == ChatMessage.Role.TOOL) {
+                String nestedDiffId = findNestedToolDiffId(message.getContent(), toolCallId);
+                if (nestedDiffId.length() > 0) {
+                    return nestedDiffId;
+                }
+            }
         }
         return "";
     }
 
     private void updateToolReview(String toolCallId, String diffId, String reviewState, String reviewMessage) {
+        if (toolCallId == null || toolCallId.length() == 0) {
+            return;
+        }
         for (int i = 0; i < messages.size(); i++) {
             ChatMessage message = messages.get(i);
+            ChatMessage next = message;
             if (message.getRole() == ChatMessage.Role.TOOL && toolCallId.equals(message.getToolCallId())) {
                 String resolvedDiffId = diffId == null || diffId.length() == 0 ? message.getDiffId() : diffId;
-                messages.set(i, message.withToolReview(resolvedDiffId, reviewState, reviewMessage));
+                next = next.withToolReview(resolvedDiffId, reviewState, reviewMessage);
             }
+            if (message.getRole() == ChatMessage.Role.TOOL) {
+                String updatedContent = updateNestedToolReviewContent(
+                        next.getContent(),
+                        toolCallId,
+                        diffId,
+                        reviewState,
+                        reviewMessage
+                );
+                if (!updatedContent.equals(next.getContent())) {
+                    next = next.withContent(updatedContent, next.getReasoningContent(), next.isStreaming());
+                }
+            }
+            if (next != message) {
+                messages.set(i, next);
+            }
+        }
+    }
+
+    private String findNestedToolDiffId(String content, String toolCallId) {
+        if (content == null || content.trim().length() == 0) {
+            return "";
+        }
+        try {
+            return findNestedToolDiffId(new JSONObject(content), toolCallId);
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    private String findNestedToolDiffId(JSONObject object, String toolCallId) {
+        if (object == null) {
+            return "";
+        }
+        String diffId = findToolCallArrayDiffId(object.optJSONArray("tool_calls"), toolCallId);
+        if (diffId.length() > 0) {
+            return diffId;
+        }
+        JSONArray agents = object.optJSONArray("agents");
+        if (agents == null) {
+            return "";
+        }
+        for (int i = 0; i < agents.length(); i++) {
+            JSONObject agent = agents.optJSONObject(i);
+            diffId = findToolCallArrayDiffId(agent == null ? null : agent.optJSONArray("tool_calls"), toolCallId);
+            if (diffId.length() > 0) {
+                return diffId;
+            }
+        }
+        return "";
+    }
+
+    private String findToolCallArrayDiffId(JSONArray calls, String toolCallId) {
+        if (calls == null) {
+            return "";
+        }
+        for (int i = 0; i < calls.length(); i++) {
+            JSONObject item = calls.optJSONObject(i);
+            if (item == null) {
+                continue;
+            }
+            if (toolCallId.equals(item.optString("id"))) {
+                JSONObject result = item.optJSONObject("result");
+                return result == null ? "" : result.optString("diff_id");
+            }
+            String diffId = findNestedToolDiffId(item, toolCallId);
+            if (diffId.length() > 0) {
+                return diffId;
+            }
+        }
+        return "";
+    }
+
+    private String updateNestedToolReviewContent(
+            String content,
+            String toolCallId,
+            String diffId,
+            String reviewState,
+            String reviewMessage
+    ) {
+        if (content == null || content.trim().length() == 0) {
+            return content == null ? "" : content;
+        }
+        try {
+            JSONObject object = new JSONObject(content);
+            return updateNestedToolReview(object, toolCallId, diffId, reviewState, reviewMessage)
+                    ? object.toString()
+                    : content;
+        } catch (Exception ignored) {
+            return content;
+        }
+    }
+
+    private boolean updateNestedToolReview(
+            JSONObject object,
+            String toolCallId,
+            String diffId,
+            String reviewState,
+            String reviewMessage
+    ) throws Exception {
+        if (object == null) {
+            return false;
+        }
+        boolean changed = updateToolCallArrayReview(
+                object.optJSONArray("tool_calls"),
+                toolCallId,
+                diffId,
+                reviewState,
+                reviewMessage
+        );
+        JSONArray agents = object.optJSONArray("agents");
+        if (agents != null) {
+            for (int i = 0; i < agents.length(); i++) {
+                JSONObject agent = agents.optJSONObject(i);
+                if (agent == null) {
+                    continue;
+                }
+                changed = updateToolCallArrayReview(
+                        agent.optJSONArray("tool_calls"),
+                        toolCallId,
+                        diffId,
+                        reviewState,
+                        reviewMessage
+                ) || changed;
+            }
+        }
+        return changed;
+    }
+
+    private boolean updateToolCallArrayReview(
+            JSONArray calls,
+            String toolCallId,
+            String diffId,
+            String reviewState,
+            String reviewMessage
+    ) throws Exception {
+        if (calls == null) {
+            return false;
+        }
+        boolean changed = false;
+        for (int i = 0; i < calls.length(); i++) {
+            JSONObject item = calls.optJSONObject(i);
+            if (item == null) {
+                continue;
+            }
+            if (toolCallId.equals(item.optString("id"))) {
+                JSONObject result = item.optJSONObject("result");
+                if (result == null) {
+                    result = new JSONObject();
+                    item.put("result", result);
+                }
+                String resolvedDiffId = diffId == null || diffId.length() == 0
+                        ? result.optString("diff_id")
+                        : diffId;
+                result.put("diff_id", resolvedDiffId == null ? "" : resolvedDiffId);
+                result.put("review_state", reviewState == null ? "" : reviewState);
+                result.put("review_message", reviewMessage == null ? "" : reviewMessage);
+                changed = true;
+            }
+            changed = updateNestedToolReview(item, toolCallId, diffId, reviewState, reviewMessage) || changed;
+        }
+        return changed;
+    }
+
+    private void refreshFileTreeAfterRevert(String filePath) {
+        String parentPath = parentPath(filePath);
+        if (parentPath.length() > 0) {
+            expandedFilePaths.add(parentPath);
+        }
+        if (isSshExecutionMode()) {
+            refreshSshDirectoryAfterFileOperation(parentPath);
         }
     }
 

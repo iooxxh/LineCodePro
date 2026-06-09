@@ -1,6 +1,7 @@
 package cn.lineai.ai.protocol;
 
 import cn.lineai.ai.message.AssistantModelMessage;
+import cn.lineai.ai.ImageInputPayload;
 import cn.lineai.ai.message.ModelMessage;
 import cn.lineai.ai.message.ToolModelMessage;
 import cn.lineai.ai.message.UserModelMessage;
@@ -13,6 +14,27 @@ import org.junit.Assert;
 import org.junit.Test;
 
 public final class AnthropicMessagesProtocolTest {
+    @Test
+    public void serializesVisionRawInputAsImageBlocks() throws Exception {
+        AnthropicMessagesProtocol protocol = new AnthropicMessagesProtocol();
+        ArrayList<ModelMessage> messages = new ArrayList<>();
+        messages.add(new UserModelMessage("fallback", ImageInputPayload.rawInputJson("识别图片", "image/webp", "abc123")));
+
+        JSONArray json = protocol.messagesJsonForTest(messages);
+
+        JSONObject user = json.getJSONObject(0);
+        Assert.assertEquals("user", user.getString("role"));
+        JSONArray content = user.getJSONArray("content");
+        Assert.assertEquals("text", content.getJSONObject(0).getString("type"));
+        Assert.assertEquals("识别图片", content.getJSONObject(0).getString("text"));
+        JSONObject image = content.getJSONObject(1);
+        Assert.assertEquals("image", image.getString("type"));
+        JSONObject source = image.getJSONObject("source");
+        Assert.assertEquals("base64", source.getString("type"));
+        Assert.assertEquals("image/webp", source.getString("media_type"));
+        Assert.assertEquals("abc123", source.getString("data"));
+    }
+
     @Test
     public void serializesToolResultsAsUserContentBlocks() throws Exception {
         AnthropicMessagesProtocol protocol = new AnthropicMessagesProtocol();

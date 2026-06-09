@@ -68,6 +68,10 @@ public interface SettingsController {
 
     void onMcpWebSearchConfigChanged(WebSearchConfig config);
 
+    String getImageUnderstandingModelId();
+
+    void onImageUnderstandingModelSelected(String id);
+
     void onLineCodeExportRequested();
 
     void onLineCodeExportTargetPicked(String uri, String displayName);

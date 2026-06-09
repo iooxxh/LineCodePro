@@ -3,6 +3,7 @@ package cn.lineai.ai.protocol;
 import cn.lineai.ai.ModelCompletionException;
 import cn.lineai.ai.ModelCompletionResponse;
 import cn.lineai.ai.ModelCancellationToken;
+import cn.lineai.ai.ImageInputPayload;
 import cn.lineai.ai.ModelRequestOptions;
 import cn.lineai.ai.ModelStreamCallback;
 import cn.lineai.ai.message.ModelMessage;
@@ -154,6 +155,8 @@ public final class OpenAiCompatibleProtocol extends AbstractHttpModelProtocol {
                             .put("function", function));
                 }
                 object.put("tool_calls", toolCalls);
+            } else if ("user".equals(message.getRole()) && ImageInputPayload.fromRawInputJson(message.getRawInputJson()) != null) {
+                object.put("content", imageContent(message));
             } else {
                 object.put("content", message.getContent());
             }
@@ -165,6 +168,26 @@ public final class OpenAiCompatibleProtocol extends AbstractHttpModelProtocol {
             array.put(object);
         }
         return array;
+    }
+
+    JSONArray messagesJsonForTest(List<ModelMessage> messages) throws Exception {
+        return messagesJson(messages);
+    }
+
+    private JSONArray imageContent(ModelMessage message) throws Exception {
+        ImageInputPayload.Payload payload = ImageInputPayload.fromRawInputJson(message.getRawInputJson());
+        if (payload == null) {
+            return new JSONArray().put(new JSONObject().put("type", "text").put("text", message.getContent()));
+        }
+        String prompt = payload.getPrompt().length() == 0 ? message.getContent() : payload.getPrompt();
+        return new JSONArray()
+                .put(new JSONObject()
+                        .put("type", "text")
+                        .put("text", prompt == null ? "" : prompt))
+                .put(new JSONObject()
+                        .put("type", "image_url")
+                        .put("image_url", new JSONObject()
+                                .put("url", payload.dataUrl())));
     }
 
     private void appendToolCallDeltas(Map<Integer, ToolCallBuilder> builders, JSONArray toolCalls) {

@@ -25,6 +25,7 @@ public final class ToolSettingsRepositoryTest {
         Set<String> enabled = new LinkedHashSet<>();
         enabled.add("file_read");
         enabled.add("web_search");
+        enabled.add("image_understanding");
         enabled.add("agent");
         enabled.add("agent_pipeline");
         McpToolConfig config = new McpToolConfig(
@@ -32,7 +33,7 @@ public final class ToolSettingsRepositoryTest {
                 "动态工具",
                 "",
                 true,
-                new String[] {"file_read", "web_search", "agent", "agent_pipeline", "shell_execute"}
+                new String[] {"file_read", "web_search", "image_understanding", "agent", "agent_pipeline", "shell_execute"}
         );
 
         String prompt = ToolSettingsRepository.renderToolPrompt(
@@ -47,6 +48,8 @@ public final class ToolSettingsRepositoryTest {
         Assert.assertTrue(prompt.contains("\"file_path\""));
         Assert.assertTrue(prompt.contains("web_search [read]"));
         Assert.assertTrue(prompt.contains("\"query\""));
+        Assert.assertTrue(prompt.contains("image_understanding [read]"));
+        Assert.assertTrue(prompt.contains("\"path\""));
         Assert.assertTrue(prompt.contains("agent [system]"));
         Assert.assertTrue(prompt.contains("agent_pipeline [system]"));
         Assert.assertTrue(prompt.contains("\"depends_on\""));

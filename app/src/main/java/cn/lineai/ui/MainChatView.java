@@ -69,6 +69,7 @@ import cn.lineai.ui.component.SshSettingsScreenView;
 import cn.lineai.ui.component.StorageManagementScreenView;
 import cn.lineai.ui.component.TermuxIntegrationScreenView;
 import cn.lineai.ui.component.ThemeSettingsScreenView;
+import cn.lineai.ui.component.ToolSettingsScreenView;
 import cn.lineai.ui.component.TutorialScreenView;
 import cn.lineai.ui.theme.LineTheme;
 import cn.lineai.ui.util.KeyboardController;
@@ -795,6 +796,31 @@ public final class MainChatView extends FrameLayout implements MainContract.View
                 }
             });
         }
+        if ("imageUnderstandingModel".equals(screenId)) {
+            return new ModelListScreenView(context, presenter.getModels(), presenter.getImageUnderstandingModelId(), "选择图片理解模型", false, new ModelListScreenView.Listener() {
+                @Override
+                public void onBack() {
+                    handleScreenBack();
+                }
+
+                @Override
+                public void onAddModel() {
+                }
+
+                @Override
+                public void onSelectModel(String id) {
+                    presenter.onImageUnderstandingModelSelected(id);
+                }
+
+                @Override
+                public void onEditModel(String id) {
+                }
+
+                @Override
+                public void onDeleteModels(List<String> ids) {
+                }
+            });
+        }
         if ("extensions".equals(screenId)) {
             return new ExtensionsScreenView(context, new ExtensionsScreenView.Listener() {
                 @Override
@@ -882,6 +908,24 @@ public final class MainChatView extends FrameLayout implements MainContract.View
                 }
             });
         }
+        if ("toolSettings".equals(screenId)) {
+            return new ToolSettingsScreenView(context, presenter.getMcpSettingsState(), imageUnderstandingModelLabel(), new ToolSettingsScreenView.Listener() {
+                @Override
+                public void onBack() {
+                    handleScreenBack();
+                }
+
+                @Override
+                public void onWebSearchConfigChanged(cn.lineai.model.WebSearchConfig config) {
+                    presenter.onMcpWebSearchConfigChanged(config);
+                }
+
+                @Override
+                public void onOpenImageUnderstandingModelPicker() {
+                    presenter.onSettingsItemSelected("imageUnderstandingModel");
+                }
+            });
+        }
         if ("mcp".equals(screenId)) {
             return new MCPSettingsScreenView(context, presenter.getMcpSettingsState(), new MCPSettingsScreenView.Listener() {
                 @Override
@@ -897,11 +941,6 @@ public final class MainChatView extends FrameLayout implements MainContract.View
                 @Override
                 public void onToolGroupChanged(String id, boolean enabled) {
                     presenter.onMcpToolGroupChanged(id, enabled);
-                }
-
-                @Override
-                public void onWebSearchConfigChanged(cn.lineai.model.WebSearchConfig config) {
-                    presenter.onMcpWebSearchConfigChanged(config);
                 }
 
                 @Override
@@ -1272,6 +1311,15 @@ public final class MainChatView extends FrameLayout implements MainContract.View
         return null;
     }
 
+    private String imageUnderstandingModelLabel() {
+        ModelConfig model = presenter.getModel(presenter.getImageUnderstandingModelId());
+        if (model == null) {
+            return "";
+        }
+        String modelId = model.getModelId();
+        return model.getName() + (modelId.length() == 0 ? "" : " · " + modelId);
+    }
+
     private View simpleScreen(String screenId) {
         String title = titleFor(screenId);
         String subtitle = subtitleFor(screenId);
@@ -1284,6 +1332,7 @@ public final class MainChatView extends FrameLayout implements MainContract.View
         if ("promptTemplates".equals(screenId)) return "自定义提示词";
         if ("input".equals(screenId)) return "输入设置";
         if ("mcp".equals(screenId)) return "工具与执行";
+        if ("toolSettings".equals(screenId)) return "工具设置";
         if ("theme".equals(screenId)) return "主题与外观";
         if ("output".equals(screenId)) return "输出与浏览";
         if ("experimental".equals(screenId)) return "实验性渲染";
@@ -1311,7 +1360,8 @@ public final class MainChatView extends FrameLayout implements MainContract.View
     private String[] rowsFor(String screenId) {
         if ("llm".equals(screenId)) return new String[] {"交流语气", "思考强度", "保留 reasoning", "自定义提示词"};
         if ("input".equals(screenId)) return new String[] {"回车键逻辑"};
-        if ("mcp".equals(screenId)) return new String[] {"MCP 执行模式", "SSH 工具", "网页搜索", "工具确认策略"};
+        if ("mcp".equals(screenId)) return new String[] {"执行目标", "本地工具", "SSH Shell", "工具确认策略"};
+        if ("toolSettings".equals(screenId)) return new String[] {"图片理解", "网页搜索", "模型选择", "搜索 API"};
         if ("theme".equals(screenId)) return new String[] {"深色主题", "浅色主题", "咖啡主题", "高对比模式"};
         if ("output".equals(screenId)) return new String[] {"代码自动换行", "网页打开方式", "内置浏览器 JavaScript", "Markdown 预览"};
         if ("experimental".equals(screenId)) return new String[] {"实验性键盘避让", "实验性消息渲染"};

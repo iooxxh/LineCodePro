@@ -3,6 +3,7 @@ package cn.lineai.ai.protocol;
 import cn.lineai.ai.ModelCompletionException;
 import cn.lineai.ai.ModelCompletionResponse;
 import cn.lineai.ai.ModelCancellationToken;
+import cn.lineai.ai.ImageInputPayload;
 import cn.lineai.ai.ModelRequestOptions;
 import cn.lineai.ai.ModelStreamCallback;
 import cn.lineai.ai.message.ModelMessage;
@@ -157,6 +158,8 @@ public final class AnthropicMessagesProtocol extends AbstractHttpModelProtocol {
             object.put("role", message.getRole());
             if ("assistant".equals(message.getRole()) && !message.getToolCalls().isEmpty()) {
                 object.put("content", assistantContentBlocks(message));
+            } else if ("user".equals(message.getRole()) && ImageInputPayload.fromRawInputJson(message.getRawInputJson()) != null) {
+                object.put("content", imageContentBlocks(message));
             } else {
                 object.put("content", message.getContent());
             }
@@ -167,6 +170,26 @@ public final class AnthropicMessagesProtocol extends AbstractHttpModelProtocol {
 
     JSONArray messagesJsonForTest(List<ModelMessage> messages) throws Exception {
         return messagesJson(messages);
+    }
+
+    private JSONArray imageContentBlocks(ModelMessage message) throws Exception {
+        ImageInputPayload.Payload payload = ImageInputPayload.fromRawInputJson(message.getRawInputJson());
+        if (payload == null) {
+            return new JSONArray().put(new JSONObject()
+                    .put("type", "text")
+                    .put("text", message.getContent()));
+        }
+        String prompt = payload.getPrompt().length() == 0 ? message.getContent() : payload.getPrompt();
+        return new JSONArray()
+                .put(new JSONObject()
+                        .put("type", "text")
+                        .put("text", prompt == null ? "" : prompt))
+                .put(new JSONObject()
+                        .put("type", "image")
+                        .put("source", new JSONObject()
+                                .put("type", "base64")
+                                .put("media_type", payload.getMimeType())
+                                .put("data", payload.getDataBase64())));
     }
 
     private JSONArray assistantContentBlocks(ModelMessage message) throws Exception {

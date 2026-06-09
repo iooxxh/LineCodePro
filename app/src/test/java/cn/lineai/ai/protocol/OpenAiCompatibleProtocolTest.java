@@ -3,6 +3,7 @@ package cn.lineai.ai.protocol;
 import static org.junit.Assert.assertEquals;
 
 import cn.lineai.ai.ModelCompletionResponse;
+import cn.lineai.ai.ImageInputPayload;
 import cn.lineai.ai.ModelRequestOptions;
 import cn.lineai.ai.ModelStreamCallback;
 import cn.lineai.ai.message.ModelMessage;
@@ -28,6 +29,23 @@ import org.json.JSONObject;
 import org.junit.Test;
 
 public final class OpenAiCompatibleProtocolTest {
+    @Test
+    public void serializesVisionRawInputAsContentParts() throws Exception {
+        ArrayList<ModelMessage> messages = new ArrayList<>();
+        messages.add(new UserModelMessage("fallback", ImageInputPayload.rawInputJson("看图", "image/jpeg", "abc123")));
+
+        JSONArray json = new OpenAiCompatibleProtocol().messagesJsonForTest(messages);
+
+        JSONObject user = json.getJSONObject(0);
+        assertEquals("user", user.getString("role"));
+        JSONArray content = user.getJSONArray("content");
+        assertEquals("text", content.getJSONObject(0).getString("type"));
+        assertEquals("看图", content.getJSONObject(0).getString("text"));
+        assertEquals("image_url", content.getJSONObject(1).getString("type"));
+        assertEquals("data:image/jpeg;base64,abc123",
+                content.getJSONObject(1).getJSONObject("image_url").getString("url"));
+    }
+
     @Test
     public void streamParsesToolCallChunksWithEmptyMetadataDeltas() throws Exception {
         LocalSseServer server = new LocalSseServer(
